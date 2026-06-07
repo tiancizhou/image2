@@ -1,5 +1,11 @@
 const db = require('../db/pool');
 
+function badRequest(message) {
+  const err = new Error(message);
+  err.status = 400;
+  return err;
+}
+
 function normalizeChannel(input) {
   return {
     name: String(input.name || '').trim(),
@@ -14,13 +20,13 @@ function normalizeChannel(input) {
 }
 
 function assertValid(channel) {
-  if (!channel.name) throw new Error('请输入渠道名称');
-  if (!channel.base_url) throw new Error('请输入中转站 Base URL');
-  if (!channel.api_key) throw new Error('请输入 API Key');
-  if (!/^https?:\/\//i.test(channel.base_url)) throw new Error('Base URL 必须以 http:// 或 https:// 开头');
-  if (channel.timeout_ms < 1000 || channel.timeout_ms > 300000) throw new Error('超时时间必须在 1000-300000ms 之间');
-  if (channel.failure_threshold < 1 || channel.failure_threshold > 20) throw new Error('失败阈值必须在 1-20 之间');
-  if (channel.cooldown_seconds < 10 || channel.cooldown_seconds > 86400) throw new Error('熔断冷却必须在 10-86400 秒之间');
+  if (!channel.name) throw badRequest('请输入渠道名称');
+  if (!channel.base_url) throw badRequest('请输入中转站 Base URL');
+  if (!channel.api_key) throw badRequest('请输入 API Key');
+  if (!/^https?:\/\//i.test(channel.base_url)) throw badRequest('Base URL 必须以 http:// 或 https:// 开头');
+  if (channel.timeout_ms < 1000 || channel.timeout_ms > 300000) throw badRequest('超时时间必须在 1000-300000ms 之间');
+  if (channel.failure_threshold < 1 || channel.failure_threshold > 20) throw badRequest('失败阈值必须在 1-20 之间');
+  if (channel.cooldown_seconds < 10 || channel.cooldown_seconds > 86400) throw badRequest('熔断冷却必须在 10-86400 秒之间');
 }
 
 async function list() {
@@ -58,7 +64,7 @@ async function create(input) {
 
 async function update(id, input) {
   const { rows } = await db.query('SELECT api_key FROM api_channels WHERE id = $1', [id]);
-  if (rows.length === 0) throw new Error('渠道不存在');
+  if (rows.length === 0) throw badRequest('渠道不存在');
 
   const channel = normalizeChannel({
     ...input,
@@ -89,12 +95,12 @@ async function update(id, input) {
       id,
     ]
   );
-  if (rowCount === 0) throw new Error('渠道不存在');
+  if (rowCount === 0) throw badRequest('渠道不存在');
 }
 
 async function remove(id) {
   const { rowCount } = await db.query('DELETE FROM api_channels WHERE id = $1', [id]);
-  if (rowCount === 0) throw new Error('渠道不存在');
+  if (rowCount === 0) throw badRequest('渠道不存在');
 }
 
 async function resetCircuit(id) {
@@ -108,7 +114,7 @@ async function resetCircuit(id) {
      WHERE id = $1`,
     [id]
   );
-  if (rowCount === 0) throw new Error('渠道不存在');
+  if (rowCount === 0) throw badRequest('渠道不存在');
 }
 
 async function getCandidates() {

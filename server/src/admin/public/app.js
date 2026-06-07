@@ -3,6 +3,11 @@ let token = localStorage.getItem('admin_token') || '';
 let currentView = 'settings';
 let cachedChannels = [];
 
+function intValue(id, fallback) {
+  const value = Number.parseInt(document.getElementById(id).value, 10);
+  return Number.isFinite(value) ? value : fallback;
+}
+
 async function request(url, options = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -359,10 +364,10 @@ function bindChannelForm() {
       base_url: document.getElementById('channel-base-url').value,
       api_key: document.getElementById('channel-api-key').value,
       enabled: document.getElementById('channel-enabled').checked,
-      priority: Number(document.getElementById('channel-priority').value),
-      timeout_ms: Number(document.getElementById('channel-timeout').value),
-      failure_threshold: Number(document.getElementById('channel-threshold').value),
-      cooldown_seconds: Number(document.getElementById('channel-cooldown').value),
+      priority: intValue('channel-priority', 100),
+      timeout_ms: intValue('channel-timeout', 120000),
+      failure_threshold: intValue('channel-threshold', 3),
+      cooldown_seconds: intValue('channel-cooldown', 300),
     };
     try {
       await request(id ? `/channels/${id}` : '/channels', {
