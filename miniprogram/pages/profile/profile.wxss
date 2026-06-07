@@ -5,11 +5,24 @@
   padding: 48rpx 32rpx;
 }
 
-.avatar {
+.avatar,
+.avatar-fallback {
   width: 128rpx;
   height: 128rpx;
   border-radius: 50%;
   border: 4rpx solid #f0edff;
+}
+
+.avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff8e8;
+  background: linear-gradient(135deg, #233026, #70a342);
+  border-color: #f4ffdf;
+  font-size: 52rpx;
+  font-weight: 900;
+  box-shadow: 0 14rpx 34rpx rgba(82, 130, 48, 0.22);
 }
 
 .nickname {
@@ -17,6 +30,12 @@
   font-weight: 600;
   margin-top: 16rpx;
   color: #333;
+}
+
+.user-code {
+  margin-top: 4rpx;
+  color: #9d8d78;
+  font-size: 22rpx;
 }
 
 .points-badge {
