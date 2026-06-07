@@ -8,6 +8,7 @@
     "pages/cdk/cdk",
     "pages/edit/edit"
   ],
+  "lazyCodeLoading": "requiredComponents",
   "window": {
     "navigationBarBackgroundColor": "#FFF8F0",
     "navigationBarTitleText": "梦倩绘境",

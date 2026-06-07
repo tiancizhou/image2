@@ -47,7 +47,6 @@
     "disableSWC": true
   },
   "compileType": "miniprogram",
-  "lazyCodeLoading": "requiredComponents",
   "libVersion": "3.7.7",
   "appid": "wx3292e0ae39ae4115",
   "projectname": "mengqian-huijing",
