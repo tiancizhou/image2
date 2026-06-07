@@ -6,6 +6,7 @@
       src="{{item.image_url}}"
       mode="widthFix"
       show-menu-by-longpress
+      bindtap="onPreviewImage"
     />
   </view>
 

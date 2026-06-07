@@ -60,6 +60,15 @@ Page({
     });
   },
 
+  onPreviewImage() {
+    const { item } = this.data;
+    if (!item || !item.image_url) return;
+    wx.previewImage({
+      current: item.image_url,
+      urls: [item.image_url],
+    });
+  },
+
   onRemix() {
     const { item } = this.data;
     if (!item || item.status !== 'success' || !item.image_url) {
