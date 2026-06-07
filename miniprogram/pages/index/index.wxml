@@ -99,8 +99,8 @@
       <text class="task-desc">AI 正在后台生成。完成后会出现在历史列表；如果渠道失败，本次不会扣积分。</text>
       <view class="task-id">任务 #{{submittedTaskId}}</view>
       <view class="task-actions">
-        <button class="task-btn secondary" bindtap="onCloseTaskModal">继续创作</button>
-        <button class="task-btn primary" bindtap="onGoHistory">去历史查看</button>
+        <view class="task-btn secondary" bindtap="onCloseTaskModal">继续创作</view>
+        <view class="task-btn primary" bindtap="onGoHistory">去历史查看</view>
       </view>
     </view>
   </view>

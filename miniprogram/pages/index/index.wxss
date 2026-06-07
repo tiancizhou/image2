@@ -295,10 +295,10 @@
 
 .task-modal {
   position: relative;
-  width: 690rpx;
+  width: 680rpx;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 54rpx 28rpx 34rpx;
+  padding: 54rpx 30rpx 34rpx;
   overflow: hidden;
   border-radius: 42rpx;
   color: #26311f;
@@ -380,25 +380,23 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12rpx;
+  width: 100%;
+  min-width: 0;
   margin-top: 34rpx;
 }
 
 .task-btn {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 86rpx;
   min-width: 0;
-  padding: 0 12rpx;
-  border: none;
+  padding: 0 8rpx;
   border-radius: 999rpx;
   font-size: 26rpx;
   font-weight: 900;
   line-height: 1;
-}
-
-.task-btn::after {
-  border: none;
 }
 
 .task-btn.secondary {
