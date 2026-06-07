@@ -1,0 +1,107 @@
+<view class="page">
+  <view class="hero-card">
+    <view class="hero-glow"></view>
+    <text class="kicker">梦倩绘境</text>
+    <text class="hero-title">让灵感入梦，让画面成真</text>
+    <text class="hero-subtitle">用文字与图片，生成属于你的梦中画境。</text>
+    <view class="balance-row">
+      <text>当前积分</text>
+      <text>{{userPoints}}</text>
+    </view>
+  </view>
+
+  <view class="mode-switch">
+    <view class="mode-item {{modeGenerateClass}}" bindtap="switchToGenerate">
+      <text class="mode-title">文生图</text>
+      <text class="mode-desc">从提示词开始</text>
+    </view>
+    <view class="mode-item {{modeEditClass}}" bindtap="switchToEdit">
+      <text class="mode-title">图生图</text>
+      <text class="mode-desc">上传参考图生成</text>
+    </view>
+  </view>
+
+  <view class="studio-card">
+    <view wx:if="{{isEditMode}}" class="source-panel">
+      <view class="section-head">
+        <text>参考图片</text>
+        <text wx:if="{{sourceImage}}" class="text-action" bindtap="onRemoveSource">移除</text>
+      </view>
+      <view class="upload-area {{uploadAreaClass}}" bindtap="onChooseImage">
+        <image wx:if="{{sourceImage}}" class="preview-image" src="{{sourceImage}}" mode="aspectFit" />
+        <view wx:else class="upload-placeholder">
+          <text class="upload-icon">+</text>
+          <text class="upload-text">上传参考图</text>
+          <text class="upload-hint">支持相册或拍照，可不填描述</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-head">
+      <text>{{promptLabel}}</text>
+      <text class="hint">{{promptLength}}/2000</text>
+    </view>
+    <textarea
+      class="input-area"
+      placeholder="{{promptPlaceholder}}"
+      placeholder-style="color: #9d8d78;"
+      value="{{prompt}}"
+      bindinput="onPromptInput"
+      maxlength="2000"
+      auto-height
+    />
+
+    <view class="section-head size-head">
+      <text>输出尺寸</text>
+      <text class="hint">消耗 {{pointsCost}} 积分</text>
+    </view>
+    <size-picker value="{{size}}" bind:change="onSizeChange" />
+
+    <view class="info-bar">
+      <text class="points-info">本次 {{actionVerb}}预计消耗 {{pointsCost}} 积分</text>
+      <text class="points-left">剩余 {{userPoints}} 积分</text>
+    </view>
+
+    <button
+      class="create-btn {{createBtnClass}}"
+      bindtap="onCreate"
+      disabled="{{generating}}"
+    >
+      {{actionText}}
+    </button>
+  </view>
+
+  <view class="status-card" wx:if="{{generating}}">
+    <view class="loading-wrap">
+      <view class="loading-dots">
+        <view></view><view></view><view></view>
+      </view>
+      <text class="loading-text">{{loadingText}}</text>
+    </view>
+  </view>
+
+  <view class="result-card" wx:if="{{resultImage}}">
+    <view class="section-head">
+      <text>{{resultLabel}}</text>
+      <text class="hint">长按图片可分享</text>
+    </view>
+    <image class="result-image" src="{{resultImage}}" mode="widthFix" show-menu-by-longpress />
+    <button class="save-btn" bindtap="onSaveImage">保存到相册</button>
+  </view>
+
+  <view class="task-mask" wx:if="{{showTaskModal}}" catchtap="onCloseTaskModal">
+    <view class="task-modal" catchtap="noop">
+      <view class="task-orbit">
+        <view class="task-dot"></view>
+      </view>
+      <text class="task-kicker">TASK ACCEPTED</text>
+      <text class="task-title">创作任务已进入队列</text>
+      <text class="task-desc">AI 正在后台生成。完成后会出现在历史列表；如果渠道失败，本次不会扣积分。</text>
+      <view class="task-id">任务 #{{submittedTaskId}}</view>
+      <view class="task-actions">
+        <button class="task-btn secondary" bindtap="onCloseTaskModal">继续创作</button>
+        <button class="task-btn primary" bindtap="onGoHistory">去历史查看</button>
+      </view>
+    </view>
+  </view>
+</view>

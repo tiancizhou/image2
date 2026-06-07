@@ -1,0 +1,51 @@
+<view class="page" wx:if="{{item}}">
+  <view class="card image-card">
+    <view class="image-tag">{{item.type_text}}</view>
+    <image
+      class="detail-image"
+      src="{{item.image_url}}"
+      mode="widthFix"
+      show-menu-by-longpress
+    />
+  </view>
+
+  <view class="card info-card">
+    <view class="prompt-block">
+      <text class="block-label">提示词</text>
+      <text class="prompt-text">{{item.prompt}}</text>
+    </view>
+    <view class="info-grid">
+      <view class="info-pill">
+        <text class="detail-label">模型</text>
+        <text class="detail-value">{{item.model}}</text>
+      </view>
+      <view class="info-pill">
+        <text class="detail-label">尺寸</text>
+        <text class="detail-value">{{item.size}}</text>
+      </view>
+      <view class="info-pill">
+        <text class="detail-label">类型</text>
+        <text class="detail-value">{{item.type_text}}</text>
+      </view>
+      <view class="info-pill">
+        <text class="detail-label">积分</text>
+        <text class="detail-value">{{item.points_cost}}</text>
+      </view>
+    </view>
+    <view class="time-row">
+      <text>生成时间</text>
+      <text>{{item.created_at_text}}</text>
+    </view>
+  </view>
+
+  <view class="card action-card">
+    <button class="btn action-primary" bindtap="onRemix">
+      <text>基于此图再创作</text>
+      <text class="action-sub">带入图生图继续调整</text>
+    </button>
+    <view class="action-row">
+      <button class="btn action-secondary" bindtap="onSaveImage">保存到相册</button>
+      <button class="btn action-danger" bindtap="onDelete">删除记录</button>
+    </view>
+  </view>
+</view>

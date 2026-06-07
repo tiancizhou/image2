@@ -1,0 +1,112 @@
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48rpx 32rpx;
+}
+
+.avatar {
+  width: 128rpx;
+  height: 128rpx;
+  border-radius: 50%;
+  border: 4rpx solid #f0edff;
+}
+
+.nickname {
+  font-size: 32rpx;
+  font-weight: 600;
+  margin-top: 16rpx;
+  color: #333;
+}
+
+.points-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 16rpx;
+  background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+  padding: 12rpx 40rpx;
+  border-radius: 24rpx;
+}
+
+.points-num {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #6c5ce7;
+}
+
+.points-label {
+  font-size: 20rpx;
+  color: #636e72;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f0edff;
+}
+
+.menu-item:last-child { border-bottom: none; }
+
+.menu-icon {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+}
+
+.menu-text {
+  flex: 1;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.menu-badge {
+  font-size: 22rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 16rpx;
+  background: linear-gradient(135deg, #55efc4, #00b894);
+  color: #fff;
+}
+
+.menu-badge.done {
+  background: #dfe6e9;
+  color: #b2bec3;
+}
+
+.section-title-inner {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #636e72;
+  margin-bottom: 16rpx;
+}
+
+.log-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f0edff;
+}
+
+.log-left { display: flex; flex-direction: column; }
+
+.log-type {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.log-remark {
+  font-size: 22rpx;
+  color: #b2bec3;
+  margin-top: 4rpx;
+}
+
+.log-amount { font-size: 28rpx; font-weight: 600; }
+.positive { color: #00b894; }
+.negative { color: #e17055; }

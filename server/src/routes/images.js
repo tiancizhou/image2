@@ -1,0 +1,133 @@
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const auth = require('../middleware/auth');
+const db = require('../db/pool');
+const settings = require('../services/settings');
+const imageStorage = require('../services/image-storage');
+const pointsService = require('../services/points');
+const generationWorker = require('../services/generation-worker');
+
+const upload = multer({ dest: 'uploads/tmp/' });
+const router = express.Router();
+
+const VALID_SIZES = ['1024x1024', '1536x1024', '1024x1536', '2048x2048', '3840x2160'];
+
+router.post('/generate', auth, async (req, res, next) => {
+  try {
+    const { prompt, model, size, n } = req.body;
+    if (!prompt) return res.status(400).json({ error: '请输入提示词' });
+    if (size && !VALID_SIZES.includes(size)) return res.status(400).json({ error: '不支持的尺寸' });
+
+    const useModel = model || await settings.get('default_model') || 'gpt-image-2';
+    const useSize = size || '1024x1024';
+    const cost = parseInt(await settings.get('points_per_generation')) || 1;
+    const userPoints = await pointsService.getUserPoints(req.userId);
+
+    if (userPoints < cost) return res.status(400).json({ error: '积分不足' });
+
+    const { rows: [gen] } = await db.query(
+      `INSERT INTO generations (user_id, type, prompt, model, size, points_cost, status)
+       VALUES ($1, 'text2img', $2, $3, $4, $5, 'pending') RETURNING *`,
+      [req.userId, prompt, useModel, useSize, cost]
+    );
+
+    generationWorker.enqueue(gen);
+    res.status(202).json({ id: gen.id, status: 'pending', points_cost: cost });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/edit', auth, upload.single('image'), async (req, res, next) => {
+  try {
+    const { prompt, model, size, n } = req.body;
+    if (!prompt) return res.status(400).json({ error: '请输入提示词' });
+    if (!req.file) return res.status(400).json({ error: '请上传图片' });
+
+    const useModel = model || await settings.get('default_model') || 'gpt-image-2';
+    const useSize = size || '1024x1024';
+    const cost = parseInt(await settings.get('points_per_generation')) || 1;
+    const userPoints = await pointsService.getUserPoints(req.userId);
+
+    if (userPoints < cost) return res.status(400).json({ error: '积分不足' });
+
+    const sourceFilename = `${Date.now()}-source-${Math.random().toString(36).slice(2, 8)}${path.extname(req.file.originalname || '.png')}`;
+    fs.renameSync(req.file.path, path.join('uploads', sourceFilename));
+
+    const { rows: [gen] } = await db.query(
+      `INSERT INTO generations (user_id, type, prompt, model, size, source_image_path, points_cost, status)
+       VALUES ($1, 'img2img', $2, $3, $4, $5, $6, 'pending') RETURNING *`,
+      [req.userId, prompt, useModel, useSize, sourceFilename, cost]
+    );
+
+    generationWorker.enqueue(gen);
+    res.status(202).json({ id: gen.id, status: 'pending', points_cost: cost });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/history', auth, async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 20;
+    const offset = (page - 1) * pageSize;
+
+    const { rows } = await db.query(
+      `SELECT id, type, prompt, model, size, result_image_path, points_cost, status, error_message, created_at
+       FROM generations WHERE user_id = $1
+       ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+      [req.userId, pageSize, offset]
+    );
+    const { rows: [{ count }] } = await db.query(
+      `SELECT COUNT(*) FROM generations WHERE user_id = $1`,
+      [req.userId]
+    );
+
+    res.json({ list: rows, total: parseInt(count), page, pageSize });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/:id', auth, async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT * FROM generations WHERE id = $1 AND user_id = $2`,
+      [req.params.id, req.userId]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: '记录不存在' });
+    res.json(rows[0]);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/:id', auth, async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT result_image_path, source_image_path FROM generations WHERE id = $1 AND user_id = $2',
+      [req.params.id, req.userId]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: '记录不存在' });
+
+    const gen = rows[0];
+    if (gen.result_image_path) {
+      for (const f of gen.result_image_path.split(',')) {
+        imageStorage.deleteImage(f.trim());
+      }
+    }
+    if (gen.source_image_path) {
+      imageStorage.deleteImage(gen.source_image_path);
+    }
+
+    await db.query('DELETE FROM generations WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+module.exports = router;

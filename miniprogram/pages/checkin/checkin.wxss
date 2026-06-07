@@ -1,0 +1,76 @@
+.checkin-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48rpx 32rpx;
+}
+
+.checkin-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #333;
+}
+
+.checkin-subtitle {
+  font-size: 26rpx;
+  color: #b2bec3;
+  margin-top: 8rpx;
+}
+
+.streak-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 40rpx 0;
+}
+
+.streak-num {
+  font-size: 80rpx;
+  font-weight: 700;
+  color: #6c5ce7;
+  line-height: 1;
+}
+
+.streak-label {
+  font-size: 24rpx;
+  color: #636e72;
+  margin-top: 8rpx;
+}
+
+.streak-bar {
+  display: flex;
+  gap: 16rpx;
+  margin: 24rpx 0;
+}
+
+.streak-dot {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: #f0edff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s;
+}
+
+.streak-dot.active {
+  background: linear-gradient(135deg, #55efc4, #00b894);
+  box-shadow: 0 4rpx 12rpx rgba(0, 184, 148, 0.3);
+}
+
+.streak-day {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #b2bec3;
+}
+
+.streak-dot.active .streak-day {
+  color: #fff;
+}
+
+.bonus-hint {
+  font-size: 24rpx;
+  color: #fd79a8;
+  margin: 12rpx 0 24rpx;
+}

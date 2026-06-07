@@ -1,0 +1,29 @@
+<view class="page">
+  <view class="card">
+    <text class="cdk-title">输入兑换码</text>
+    <text class="cdk-subtitle">输入管理员提供的兑换码获取积分</text>
+    <input
+      class="cdk-input"
+      placeholder="请输入兑换码"
+      placeholder-style="color: #b2bec3;"
+      value="{{code}}"
+      bindinput="onCodeInput"
+      maxlength="16"
+    />
+    <button
+      class="btn btn-pink"
+      bindtap="onRedeem"
+      disabled="{{!code}}"
+    >
+      立即兑换
+    </button>
+  </view>
+
+  <view class="card" wx:if="{{result}}">
+    <view class="result-box">
+      <text style="font-size:40rpx;">🎉</text>
+      <text class="result-text">兑换成功！获得 {{result.points}} 积分</text>
+      <text class="result-balance">当前余额：{{result.balanceAfter}} 积分</text>
+    </view>
+  </view>
+</view>

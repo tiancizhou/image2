@@ -1,0 +1,43 @@
+.cdk-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #333;
+}
+
+.cdk-subtitle {
+  display: block;
+  font-size: 24rpx;
+  color: #b2bec3;
+  margin: 8rpx 0 24rpx;
+}
+
+.cdk-input {
+  background: #f8f0ff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  font-size: 30rpx;
+  letter-spacing: 4rpx;
+  font-weight: 600;
+  margin-bottom: 24rpx;
+}
+
+.result-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24rpx;
+}
+
+.result-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #00b894;
+  margin-top: 12rpx;
+}
+
+.result-balance {
+  font-size: 24rpx;
+  color: #636e72;
+  margin-top: 8rpx;
+}

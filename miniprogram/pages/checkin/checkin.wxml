@@ -1,0 +1,31 @@
+<view class="page">
+  <view class="checkin-card card">
+    <text class="checkin-title">每日签到</text>
+    <text class="checkin-subtitle">每天签到领取积分奖励</text>
+
+    <view class="streak-info">
+      <text class="streak-num">{{consecutive}}</text>
+      <text class="streak-label">连续签到天数</text>
+    </view>
+
+    <view class="streak-bar">
+      <view
+        wx:for="{{7}}"
+        wx:key="index"
+        class="streak-dot {{index < consecutive % 7 || (consecutive > 0 && consecutive % 7 === 0 && index < 7) ? 'active' : ''}}"
+      >
+        <text class="streak-day">{{index + 1}}</text>
+      </view>
+    </view>
+
+    <text class="bonus-hint" wx:if="{{bonusHint}}">{{bonusHint}}</text>
+
+    <button
+      class="btn btn-mint {{checkedIn ? 'btn-disabled' : ''}}"
+      bindtap="onCheckin"
+      disabled="{{checkedIn}}"
+    >
+      {{checkedIn ? '今日已签到' : '立即签到'}}
+    </button>
+  </view>
+</view>

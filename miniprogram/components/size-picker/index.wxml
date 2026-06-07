@@ -1,0 +1,15 @@
+<view class="size-grid">
+  <view
+    wx:for="{{displaySizes}}"
+    wx:key="value"
+    class="size-card {{item.activeClass}}"
+    data-size="{{item.value}}"
+    bindtap="onSelect"
+  >
+    <view class="size-icon">
+      <view class="size-rect" style="{{item.rectStyle}}"></view>
+    </view>
+    <text class="size-label">{{item.label}}</text>
+    <text class="size-desc">{{item.desc}}</text>
+  </view>
+</view>

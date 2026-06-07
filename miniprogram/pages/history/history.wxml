@@ -1,0 +1,40 @@
+<view class="page">
+  <view class="history-grid" wx:if="{{list.length > 0}}">
+    <view
+      wx:for="{{list}}"
+      wx:key="id"
+      class="history-card"
+      data-id="{{item.id}}"
+      bindtap="onTapItem"
+    >
+      <view class="history-thumb placeholder {{item.status_class}}" wx:if="{{!item.image_url}}">
+        <text>{{item.status_text}}</text>
+        <text wx:if="{{item.status === 'failed'}}" class="error-text">{{item.error_message}}</text>
+      </view>
+      <image
+        wx:else
+        class="history-thumb"
+        src="{{item.image_url}}"
+        mode="aspectFill"
+        lazy-load
+      />
+      <view class="history-meta">
+        <view class="meta-top">
+          <text class="status-badge {{item.status_class}}">{{item.status_text}}</text>
+          <text class="history-type">{{item.type === 'img2img' ? '图生图' : '文生图'}}</text>
+        </view>
+        <text class="history-prompt">{{item.prompt}}</text>
+        <text class="history-info">{{item.size}} · {{item.created_at_text}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:if="{{!loading && list.length === 0}}">
+    <text style="font-size:48rpx;">🎨</text>
+    <text>还没有生成记录哦~</text>
+  </view>
+
+  <view class="load-more" wx:if="{{hasMore}}">
+    <text class="load-more-text" bindtap="loadMore">加载更多</text>
+  </view>
+</view>

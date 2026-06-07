@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "size-picker": "../../components/size-picker/index"
+  },
+  "navigationBarTitleText": "图片编辑"
+}
