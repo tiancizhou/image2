@@ -20,14 +20,15 @@ function request(url, options = {}) {
       },
       success(res) {
         if (res.statusCode === 401) {
-          wx.removeStorageSync('token');
-          app.globalData.token = '';
+          clearLogin();
           wx.showToast({ title: '请重新登录', icon: 'none' });
           reject(new Error('未登录'));
           return;
         }
         if (res.statusCode >= 400) {
-          reject(new Error(res.data.error || '请求失败'));
+          const message = res.data.error || '请求失败';
+          if (res.statusCode === 404 && message === '用户不存在') clearLogin();
+          reject(new Error(message));
           return;
         }
         resolve(res.data);
@@ -73,8 +74,15 @@ function uploadFile(url, filePath, name, formData = {}) {
   });
 }
 
-function ensureLogin() {
+function clearLogin() {
+  wx.removeStorageSync('token');
+  app.globalData.token = '';
+  app.globalData.userInfo = null;
+}
+
+function ensureLogin(force = false) {
   return new Promise((resolve, reject) => {
+    if (force) clearLogin();
     if (app.globalData.token) { resolve(); return; }
     wx.login({
       success(loginRes) {
@@ -92,4 +100,4 @@ function ensureLogin() {
   });
 }
 
-module.exports = { request, uploadFile, ensureLogin };
+module.exports = { request, uploadFile, ensureLogin, clearLogin };

@@ -1,4 +1,4 @@
-const { request, uploadFile, ensureLogin } = require('../../utils/api');
+const { request, uploadFile, ensureLogin, clearLogin } = require('../../utils/api');
 const app = getApp();
 
 Page({
@@ -43,7 +43,16 @@ Page({
       await ensureLogin();
       const profile = await request('/api/user/profile');
       this.setData({ userPoints: profile.points });
-    } catch {}
+    } catch (err) {
+      if (err.message === '用户不存在') {
+        clearLogin();
+        try {
+          await ensureLogin(true);
+          const profile = await request('/api/user/profile');
+          this.setData({ userPoints: profile.points });
+        } catch {}
+      }
+    }
   },
 
   onPromptInput(e) {
