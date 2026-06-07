@@ -111,22 +111,23 @@
   flex-direction: column;
   gap: 18rpx;
   padding: 28rpx;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .action-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 18rpx;
+  gap: 16rpx;
+  width: 100%;
+  min-width: 0;
 }
 
-.action-card .btn {
-  margin: 0;
-  border: none;
+.action-btn {
+  box-sizing: border-box;
+  min-width: 0;
   border-radius: 999rpx;
-}
-
-.action-card .btn::after {
-  border: none;
+  text-align: center;
 }
 
 .action-primary {
@@ -153,6 +154,9 @@
 .action-secondary,
 .action-danger {
   height: 86rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 28rpx;
   font-weight: 700;
 }

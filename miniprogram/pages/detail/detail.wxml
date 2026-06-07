@@ -39,13 +39,13 @@
   </view>
 
   <view class="card action-card">
-    <button class="btn action-primary" bindtap="onRemix">
+    <view class="action-btn action-primary" bindtap="onRemix">
       <text>基于此图再创作</text>
       <text class="action-sub">带入图生图继续调整</text>
-    </button>
+    </view>
     <view class="action-row">
-      <button class="btn action-secondary" bindtap="onSaveImage">保存到相册</button>
-      <button class="btn action-danger" bindtap="onDelete">删除记录</button>
+      <view class="action-btn action-secondary" bindtap="onSaveImage">保存到相册</view>
+      <view class="action-btn action-danger" bindtap="onDelete">删除记录</view>
     </view>
   </view>
 </view>
