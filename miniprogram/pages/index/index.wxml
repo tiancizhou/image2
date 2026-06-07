@@ -96,7 +96,7 @@
       </view>
       <text class="task-kicker">TASK ACCEPTED</text>
       <text class="task-title">创作任务已进入队列</text>
-      <text class="task-desc">AI 正在后台生成。完成后会出现在历史列表；如果渠道失败，本次不会扣积分。</text>
+      <text class="task-desc">AI 正在后台生成。完成后会出现在历史列表；提交时会先冻结积分，渠道失败会自动返还。</text>
       <view class="task-id">任务 #{{submittedTaskId}}</view>
       <view class="task-actions">
         <view class="task-btn secondary" bindtap="onCloseTaskModal">继续创作</view>

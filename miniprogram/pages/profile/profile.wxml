@@ -47,4 +47,5 @@
       <text class="log-amount {{item.amountClass}}">{{item.amountText}}</text>
     </view>
   </view>
+
 </view>

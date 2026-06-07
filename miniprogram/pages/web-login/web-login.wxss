@@ -1,0 +1,74 @@
+.page {
+  min-height: 100vh;
+  padding: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(112, 163, 66, 0.18), transparent 420rpx),
+    linear-gradient(180deg, #fff8f0 0%, #f2eadc 100%);
+}
+
+.login-card {
+  width: 100%;
+  padding: 48rpx 36rpx;
+  border-radius: 42rpx;
+  background: rgba(255, 252, 246, 0.92);
+  box-shadow: 0 28rpx 80rpx rgba(35, 48, 38, 0.16);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mark {
+  width: 132rpx;
+  height: 132rpx;
+  border-radius: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff8e8;
+  background: linear-gradient(135deg, #233026, #70a342);
+  font-size: 58rpx;
+  font-weight: 900;
+}
+
+.title {
+  margin-top: 34rpx;
+  color: #233026;
+  font-size: 38rpx;
+  font-weight: 800;
+}
+
+.desc {
+  margin-top: 18rpx;
+  color: #8c7b65;
+  font-size: 26rpx;
+  line-height: 1.8;
+  text-align: center;
+}
+
+.primary,
+.secondary {
+  width: 100%;
+  height: 92rpx;
+  margin-top: 30rpx;
+  border-radius: 999rpx;
+  line-height: 92rpx;
+  font-size: 28rpx;
+}
+
+.primary {
+  color: #fff8e8;
+  background: linear-gradient(135deg, #233026, #70a342);
+}
+
+.secondary {
+  color: #6f604d;
+  background: #efe4d3;
+}
+
+.primary::after,
+.secondary::after {
+  border: 0;
+}

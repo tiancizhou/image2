@@ -22,6 +22,9 @@ app.use('/uploads', express.static(path.join(__dirname, '..', config.uploadDir))
 // 管理后台静态页面
 app.use('/admin', express.static(path.join(__dirname, 'admin', 'public')));
 
+// PC 用户端静态页面
+app.use('/pc', express.static(path.join(__dirname, 'pc', 'public')));
+
 // 小程序 API
 app.use('/api/auth', authRoutes);
 app.use('/api/images', imageRoutes);
@@ -33,6 +36,11 @@ app.use('/admin/api', adminRoutes);
 // 管理后台 SPA fallback
 app.get('/admin/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'public', 'index.html'));
+});
+
+// PC 用户端 SPA fallback
+app.get('/pc/{*splat}', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pc', 'public', 'index.html'));
 });
 
 app.use(errorHandler);

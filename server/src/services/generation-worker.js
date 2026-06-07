@@ -43,18 +43,14 @@ async function runJob(job) {
   const startedAt = Date.now();
   console.log(`[Worker] start generation=${job.id} type=${job.type} model=${job.model} size=${job.size}`);
   try {
+    await ensureReservedPoints(job);
+
     const { result, channel } = job.type === 'img2img'
       ? await runImageEdit(job)
       : await runTextGenerate(job);
 
     const images = await persistImages(result);
     if (images.length === 0) throw new Error('中转站未返回图片');
-
-    await pointsService.consume(
-      job.user_id,
-      job.points_cost,
-      `${job.type === 'img2img' ? '图片编辑' : '文生图'} #${job.id}`
-    );
 
     await db.query(
       `UPDATE generations
@@ -68,9 +64,57 @@ async function runJob(job) {
       'UPDATE generations SET status = $1, error_message = $2, channel_id = COALESCE($3, channel_id) WHERE id = $4',
       ['failed', err.message, err.channelId || null, job.id]
     );
+    await refundReservedPoints(job);
     console.error(`[Worker] failed generation=${job.id} duration=${Date.now() - startedAt}ms error=${err.message}`);
     throw err;
   }
+}
+
+async function ensureReservedPoints(job) {
+  if (!job.points_cost || job.points_cost <= 0) return;
+  if (await hasPointLog(job, 'consume', reserveRemark(job))) return;
+
+  await pointsService.consume(
+    job.user_id,
+    job.points_cost,
+    reserveRemark(job)
+  );
+}
+
+async function refundReservedPoints(job) {
+  if (!job.points_cost || job.points_cost <= 0) return;
+  if (!await hasPointLog(job, 'consume', reserveRemark(job))) return;
+
+  if (await hasPointLog(job, 'refund', refundRemark(job))) return;
+
+  await pointsService.add(
+    job.user_id,
+    job.points_cost,
+    'refund',
+    refundRemark(job)
+  );
+}
+
+async function hasPointLog(job, type, remark) {
+  const { rows } = await db.query(
+    `SELECT id FROM point_logs
+     WHERE user_id = $1 AND type = $2 AND remark = $3
+     LIMIT 1`,
+    [job.user_id, type, remark]
+  );
+  return rows.length > 0;
+}
+
+function reserveRemark(job) {
+  return `生成任务冻结: ${generationLabel(job.type)} #${job.id}`;
+}
+
+function refundRemark(job) {
+  return `生成失败返还: ${generationLabel(job.type)} #${job.id}`;
+}
+
+function generationLabel(type) {
+  return type === 'img2img' ? '图生图' : '文生图';
 }
 
 async function runTextGenerate(job) {

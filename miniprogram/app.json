@@ -3,6 +3,7 @@
     "pages/index/index",
     "pages/history/history",
     "pages/detail/detail",
+    "pages/web-login/web-login",
     "pages/profile/profile",
     "pages/checkin/checkin",
     "pages/cdk/cdk",

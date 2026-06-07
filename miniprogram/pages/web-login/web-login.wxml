@@ -1,0 +1,9 @@
+<view class="page">
+  <view class="login-card">
+    <view class="mark">梦</view>
+    <text class="title">{{title}}</text>
+    <text class="desc">{{desc}}</text>
+    <button class="primary" wx:if="{{canRetry}}" bindtap="confirmLogin">重新确认</button>
+    <button class="secondary" bindtap="goHome">返回小程序</button>
+  </view>
+</view>

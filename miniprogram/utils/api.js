@@ -8,16 +8,20 @@ function request(url, options = {}) {
     }
     const fullUrl = `${app.globalData.baseUrl}${url}`;
     console.log('[api] request', options.method || 'GET', fullUrl);
+    const header = {
+      'Content-Type': 'application/json',
+      ...options.header,
+    };
+    if (options.auth !== false) {
+      header.Authorization = `Bearer ${app.globalData.token}`;
+    }
+
     wx.request({
       url: fullUrl,
       method: options.method || 'GET',
       data: options.data,
       timeout: options.timeout || 20000,
-      header: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${app.globalData.token}`,
-        ...options.header,
-      },
+      header,
       success(res) {
         if (res.statusCode === 401) {
           clearLogin();

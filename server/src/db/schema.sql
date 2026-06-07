@@ -17,6 +17,25 @@ CREATE TABLE IF NOT EXISTS users (
   last_login_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS pc_accounts (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR UNIQUE NOT NULL,
+  password_hash VARCHAR NOT NULL,
+  user_id INTEGER UNIQUE REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  last_login_at TIMESTAMP DEFAULT NOW(),
+  bound_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS web_login_sessions (
+  token VARCHAR PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR DEFAULT 'pending',
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  confirmed_at TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS api_channels (
   id SERIAL PRIMARY KEY,
   name VARCHAR NOT NULL,

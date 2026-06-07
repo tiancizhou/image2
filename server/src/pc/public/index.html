@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>梦倩绘境 | PC 创作台</title>
+  <link rel="stylesheet" href="/pc/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="side-panel">
+      <div class="brand-mark">
+        <span class="brand-glyph">梦</span>
+        <div>
+          <strong>梦倩绘境</strong>
+          <small>PC 创作台</small>
+        </div>
+      </div>
+
+      <nav class="nav-list" aria-label="主导航">
+        <button class="nav-item active" data-view="create">创作</button>
+        <button class="nav-item" data-view="history">历史</button>
+        <button class="nav-item" data-view="account">我的</button>
+      </nav>
+
+      <div class="profile-card">
+        <div class="avatar">梦</div>
+        <div>
+          <span id="userName">未登录</span>
+          <strong><span id="userPoints">--</span> 积分</strong>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-panel">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">MENGQIAN IMAGE STUDIO</p>
+          <h1>把一句话、一张图，延展成新的画面。</h1>
+        </div>
+        <div class="hero-actions">
+          <button id="refreshBtn" class="ghost-btn">刷新状态</button>
+          <button id="historyBtn" class="solid-btn">查看历史</button>
+        </div>
+      </section>
+
+      <section id="createView" class="view-grid">
+        <div id="authPanel" class="auth-card">
+          <div>
+            <p class="eyebrow">WECHAT MINI PROGRAM</p>
+            <h2>微信扫码登录 PC 创作台</h2>
+            <p class="auth-copy">请使用微信扫描右侧小程序码。扫码后会打开“梦倩绘境”小程序并自动确认登录，PC 端会同步你的积分、历史和签到状态。</p>
+            <div class="auth-actions">
+              <button id="newQrBtn" class="solid-btn" type="button">刷新小程序码</button>
+            </div>
+          </div>
+          <div class="qr-box">
+            <img id="qrImage" alt="小程序登录码">
+            <span id="qrStatus">正在生成小程序码...</span>
+          </div>
+        </div>
+
+        <form id="createForm" class="composer-card">
+          <div class="mode-switch">
+            <button type="button" class="mode-btn active" data-mode="text2img">文生图</button>
+            <button type="button" class="mode-btn" data-mode="img2img">图生图</button>
+          </div>
+
+          <label class="field-label" for="promptInput">创作描述</label>
+          <textarea id="promptInput" rows="7" placeholder="例如：月光下的东方庭院，薄雾、琉璃灯、电影感构图、细节丰富"></textarea>
+
+          <div id="uploadBox" class="upload-box hidden">
+            <input id="imageInput" type="file" accept="image/*">
+            <div>
+              <strong>上传参考图</strong>
+              <span id="fileName">选择一张图片作为再创作基础</span>
+            </div>
+          </div>
+
+          <div class="control-row">
+            <label>
+              <span>画幅</span>
+              <select id="sizeSelect">
+                <option value="1024x1024">方图 1024x1024</option>
+                <option value="1536x1024">横图 1536x1024</option>
+                <option value="1024x1536">竖图 1024x1536</option>
+                <option value="2048x2048">高清方图 2048x2048</option>
+                <option value="3840x2160">宽屏 3840x2160</option>
+              </select>
+            </label>
+            <label>
+              <span>模型</span>
+              <input id="modelInput" value="gpt-image-2">
+            </label>
+          </div>
+
+          <button id="submitBtn" class="submit-btn" type="submit">开始生成</button>
+          <p class="form-note">任务提交后会先冻结积分，生成失败会自动返还。完成后可在历史中查看。</p>
+        </form>
+
+        <aside class="status-card">
+          <div class="status-orb"></div>
+          <p>后台异步生成</p>
+          <h2 id="taskTitle">等待你的第一条创作描述</h2>
+          <span id="taskDesc">提交任务后无需停留在当前页面，历史列表会显示生成状态。</span>
+          <div id="taskBox" class="task-box hidden"></div>
+        </aside>
+      </section>
+
+      <section id="historyView" class="history-view hidden">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">HISTORY</p>
+            <h2>创作记录</h2>
+          </div>
+          <button id="loadHistoryBtn" class="ghost-btn">刷新历史</button>
+        </div>
+        <div id="historyGrid" class="history-grid"></div>
+        <button id="loadMoreBtn" class="load-more hidden">加载更多</button>
+      </section>
+
+      <section id="accountView" class="account-view hidden">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">ACCOUNT</p>
+            <h2>我的账户</h2>
+          </div>
+        </div>
+        <div class="account-grid">
+          <div class="account-card">
+            <span>当前积分</span>
+            <strong><span id="accountPoints">--</span></strong>
+            <button id="checkinBtn" class="solid-btn">今日签到</button>
+          </div>
+          <form id="cdkForm" class="account-card">
+            <span>兑换码</span>
+            <input id="cdkInput" placeholder="输入管理员提供的 CDK">
+            <button class="ghost-btn" type="submit">兑换积分</button>
+          </form>
+        </div>
+        <div class="points-card">
+          <h3>积分变动</h3>
+          <div id="pointsList" class="points-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <div id="detailModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close="detail"></div>
+    <article class="detail-card">
+      <button class="close-btn" data-close="detail">关闭</button>
+      <div id="detailBody"></div>
+    </article>
+  </div>
+
+  <script src="/pc/app.js"></script>
+</body>
+</html>
