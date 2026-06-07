@@ -10,6 +10,7 @@ let running = false;
 
 function enqueue(job) {
   queue.push(job);
+  console.log(`[Worker] enqueue generation=${job.id} type=${job.type} model=${job.model} size=${job.size} queue=${queue.length}`);
   setImmediate(processQueue);
 }
 
@@ -39,6 +40,8 @@ async function restorePendingJobs() {
 }
 
 async function runJob(job) {
+  const startedAt = Date.now();
+  console.log(`[Worker] start generation=${job.id} type=${job.type} model=${job.model} size=${job.size}`);
   try {
     const { result, channel } = job.type === 'img2img'
       ? await runImageEdit(job)
@@ -59,11 +62,13 @@ async function runJob(job) {
        WHERE id = $4`,
       ['success', images.join(','), channel.id, job.id]
     );
+    console.log(`[Worker] success generation=${job.id} channel=${channel.name} images=${images.length} cost=${job.points_cost} duration=${Date.now() - startedAt}ms`);
   } catch (err) {
     await db.query(
-      'UPDATE generations SET status = $1, error_message = $2 WHERE id = $3',
-      ['failed', err.message, job.id]
+      'UPDATE generations SET status = $1, error_message = $2, channel_id = COALESCE($3, channel_id) WHERE id = $4',
+      ['failed', err.message, err.channelId || null, job.id]
     );
+    console.error(`[Worker] failed generation=${job.id} duration=${Date.now() - startedAt}ms error=${err.message}`);
     throw err;
   }
 }
