@@ -14,7 +14,7 @@ function normalizeChannel(input) {
     enabled: input.enabled !== false,
     priority: Number.parseInt(input.priority, 10) || 100,
     timeout_ms: Number.parseInt(input.timeout_ms, 10) || 120000,
-    failure_threshold: Number.parseInt(input.failure_threshold, 10) || 3,
+    failure_threshold: Number.parseInt(input.failure_threshold, 10) || 2,
     cooldown_seconds: Number.parseInt(input.cooldown_seconds, 10) || 300,
   };
 }
@@ -27,6 +27,15 @@ function assertValid(channel) {
   if (channel.timeout_ms < 1000 || channel.timeout_ms > 300000) throw badRequest('超时时间必须在 1000-300000ms 之间');
   if (channel.failure_threshold < 1 || channel.failure_threshold > 20) throw badRequest('失败阈值必须在 1-20 之间');
   if (channel.cooldown_seconds < 10 || channel.cooldown_seconds > 86400) throw badRequest('熔断冷却必须在 10-86400 秒之间');
+}
+
+function failureWeight(error) {
+  const message = String(error?.message || '');
+  const status = error?.upstreamStatus || error?.status;
+  if (message.includes('aborted due to timeout') || message.includes('TimeoutError')) return 2;
+  if (status >= 500) return 2;
+  if (message.includes('Upstream request failed') || message.includes('upstream_error')) return 2;
+  return 1;
 }
 
 async function list() {
@@ -123,7 +132,7 @@ async function getCandidates() {
      FROM api_channels
      WHERE enabled = TRUE
        AND (circuit_status <> 'open' OR circuit_open_until IS NULL OR circuit_open_until <= NOW())
-     ORDER BY priority ASC, id ASC`
+     ORDER BY priority ASC, consecutive_failures ASC, last_failure_at ASC NULLS FIRST, id ASC`
   );
   return rows;
 }
@@ -143,7 +152,7 @@ async function markSuccess(id) {
 }
 
 async function markFailure(channel, error) {
-  const nextFailures = (channel.consecutive_failures || 0) + 1;
+  const nextFailures = (channel.consecutive_failures || 0) + failureWeight(error);
   const shouldOpen = nextFailures >= channel.failure_threshold;
   await db.query(
     `UPDATE api_channels SET

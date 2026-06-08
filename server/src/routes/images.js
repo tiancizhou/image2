@@ -89,17 +89,27 @@ router.post('/generate', auth, async (req, res, next) => {
 router.post('/edit', auth, upload.single('image'), async (req, res, next) => {
   let sourceFilename = null;
   try {
-    const { prompt, model, size } = req.body;
+    const { prompt, model, size, source_generation_id } = req.body;
     if (!prompt) return res.status(400).json({ error: '请输入提示词' });
-    if (!req.file) return res.status(400).json({ error: '请上传图片' });
+    if (!req.file && !source_generation_id) return res.status(400).json({ error: '请上传图片' });
     if (size && !VALID_SIZES.includes(size)) return res.status(400).json({ error: '不支持的尺寸' });
 
     const useModel = model || await settings.get('default_model') || 'gpt-image-2';
     const useSize = size || '1024x1024';
     const cost = parseInt(await settings.get('points_per_generation')) || 1;
 
-    sourceFilename = `${Date.now()}-source-${Math.random().toString(36).slice(2, 8)}${path.extname(req.file.originalname || '.png')}`;
-    fs.renameSync(req.file.path, path.join('uploads', sourceFilename));
+    if (source_generation_id) {
+      const { rows } = await db.query(
+        `SELECT result_image_path FROM generations
+         WHERE id = $1 AND user_id = $2 AND status = 'success' AND result_image_path IS NOT NULL`,
+        [source_generation_id, req.userId]
+      );
+      if (rows.length === 0) return res.status(400).json({ error: '参考图记录不存在或未生成完成' });
+      sourceFilename = String(rows[0].result_image_path).split(',')[0].trim();
+    } else {
+      sourceFilename = `${Date.now()}-source-${Math.random().toString(36).slice(2, 8)}${path.extname(req.file.originalname || '.png')}`;
+      fs.renameSync(req.file.path, path.join('uploads', sourceFilename));
+    }
 
     const gen = await createGenerationAndReservePoints({
       userId: req.userId,
@@ -117,7 +127,7 @@ router.post('/edit', auth, upload.single('image'), async (req, res, next) => {
     if (req.file?.path && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    if (sourceFilename) {
+    if (sourceFilename && req.file) {
       imageStorage.deleteImage(sourceFilename);
     }
     next(err);

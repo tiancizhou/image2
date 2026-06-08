@@ -1,12 +1,13 @@
 const channels = require('./channels');
 
-async function requestChannel(channel, endpoint, body, isMultipart = false) {
+async function requestChannel(channel, endpoint, body, isMultipart = false, timeoutCapMs = 90000) {
   const url = `${channel.base_url.replace(/\/+$/, '')}${endpoint}`;
   const headers = { Authorization: `Bearer ${channel.api_key}` };
   if (!isMultipart) headers['Content-Type'] = 'application/json';
 
   const startedAt = Date.now();
-  console.log(`[OpenAI] channel=${channel.name} id=${channel.id} POST ${url} timeout=${channel.timeout_ms || 120000}ms`);
+  const timeoutMs = Math.min(channel.timeout_ms || 120000, timeoutCapMs);
+  console.log(`[OpenAI] channel=${channel.name} id=${channel.id} POST ${url} timeout=${timeoutMs}ms`);
 
   let res;
   try {
@@ -14,7 +15,7 @@ async function requestChannel(channel, endpoint, body, isMultipart = false) {
       method: 'POST',
       headers,
       body: isMultipart ? body : JSON.stringify(body),
-      signal: AbortSignal.timeout(channel.timeout_ms || 120000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (err) {
     err.message = `${channel.name} 请求失败 ${Date.now() - startedAt}ms: ${err.message}`;
@@ -70,7 +71,9 @@ async function generateImage({ prompt, model, size, n }) {
   return withFailover(async (channel) => requestChannel(
     channel,
     '/v1/images/generations',
-    { model, prompt, n: n || 1, size }
+    { model, prompt, n: n || 1, size },
+    false,
+    90000
   ));
 }
 
@@ -81,7 +84,7 @@ async function editImage({ prompt, model, n, imageBuffer, filename }) {
   formData.append('n', String(n || 1));
   formData.append('image', new Blob([imageBuffer]), filename);
 
-  return withFailover(async (channel) => requestChannel(channel, '/v1/images/edits', formData, true));
+  return withFailover(async (channel) => requestChannel(channel, '/v1/images/edits', formData, true, 75000));
 }
 
 module.exports = { generateImage, editImage };

@@ -21,6 +21,7 @@ Page({
     size: '1024x1024',
     sourceImage: '',
     sourceFilePath: '',
+    sourceGenerationId: '',
     generating: false,
     showTaskModal: false,
     submittedTaskId: '',
@@ -103,34 +104,19 @@ Page({
     const draft = wx.getStorageSync('remix_draft');
     if (!draft || !draft.imageUrl) return;
     wx.removeStorageSync('remix_draft');
-    wx.showLoading({ title: '载入参考图' });
-    wx.downloadFile({
-      url: draft.imageUrl,
-      success: (res) => {
-        if (res.statusCode !== 200) {
-          wx.showToast({ title: '参考图载入失败', icon: 'none' });
-          return;
-        }
-        const prompt = draft.prompt ? `基于上一张图重新生成，调整为：` : '';
-        this.syncModeState({
-          mode: 'edit',
-          sourceImage: res.tempFilePath,
-          sourceFilePath: res.tempFilePath,
-          uploadAreaClass: 'has-image',
-          size: draft.size || this.data.size,
-          prompt,
-          promptLength: prompt.length,
-          resultImage: '',
-        });
-        wx.showToast({ title: '已载入上一张图', icon: 'none' });
-      },
-      fail: () => {
-        wx.showToast({ title: '参考图载入失败', icon: 'none' });
-      },
-      complete: () => {
-        wx.hideLoading();
-      },
+    const prompt = draft.prompt ? `基于上一张图重新生成，调整为：` : '';
+    this.syncModeState({
+      mode: 'edit',
+      sourceImage: draft.imageUrl,
+      sourceFilePath: '',
+      sourceGenerationId: draft.sourceId || '',
+      uploadAreaClass: 'has-image',
+      size: draft.size || this.data.size,
+      prompt,
+      promptLength: prompt.length,
+      resultImage: '',
     });
+    wx.showToast({ title: '已带入上一张图', icon: 'none' });
   },
 
   onChooseImage() {
@@ -143,6 +129,7 @@ Page({
         this.setData({
           sourceImage: file.tempFilePath,
           sourceFilePath: file.tempFilePath,
+          sourceGenerationId: '',
           uploadAreaClass: 'has-image',
           resultImage: '',
         });
@@ -151,13 +138,13 @@ Page({
   },
 
   onRemoveSource() {
-    this.setData({ sourceImage: '', sourceFilePath: '', uploadAreaClass: '', resultImage: '' });
+    this.setData({ sourceImage: '', sourceFilePath: '', sourceGenerationId: '', uploadAreaClass: '', resultImage: '' });
   },
 
   async onCreate() {
-    const { mode, prompt, size, sourceFilePath, generating, userPoints, pointsCost, imagePromptFallback } = this.data;
+    const { mode, prompt, size, sourceFilePath, sourceGenerationId, generating, userPoints, pointsCost, imagePromptFallback } = this.data;
     if (generating) return;
-    if (mode === 'edit' && !sourceFilePath) {
+    if (mode === 'edit' && !sourceFilePath && !sourceGenerationId) {
       wx.showToast({ title: '请先上传图片', icon: 'none' });
       return;
     }
@@ -175,17 +162,30 @@ Page({
     try {
       await ensureLogin();
       const finalPrompt = prompt.trim() || imagePromptFallback;
-      const res = mode === 'edit'
-        ? await uploadFile('/api/images/edit', sourceFilePath, 'image', {
+      let res;
+      if (mode === 'edit' && sourceGenerationId) {
+        res = await request('/api/images/edit', {
+          method: 'POST',
+          data: {
+            prompt: finalPrompt,
+            model: 'gpt-image-2',
+            size,
+            source_generation_id: sourceGenerationId,
+          },
+        });
+      } else if (mode === 'edit') {
+        res = await uploadFile('/api/images/edit', sourceFilePath, 'image', {
           prompt: finalPrompt,
           model: 'gpt-image-2',
           size,
           n: '1',
-        })
-        : await request('/api/images/generate', {
+        });
+      } else {
+        res = await request('/api/images/generate', {
           method: 'POST',
           data: { prompt: finalPrompt, model: 'gpt-image-2', size, n: 1 },
         });
+      }
 
       this.setData({
         showTaskModal: true,

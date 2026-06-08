@@ -7,6 +7,16 @@
   box-sizing: border-box;
 }
 
+.polling-tip {
+  margin: 0 0 20rpx;
+  padding: 18rpx 24rpx;
+  border-radius: 22rpx;
+  color: #6f604d;
+  background: rgba(255, 234, 167, 0.42);
+  font-size: 24rpx;
+  text-align: center;
+}
+
 .history-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

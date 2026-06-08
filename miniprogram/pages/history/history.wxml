@@ -1,4 +1,7 @@
 <view class="page">
+  <view class="polling-tip" wx:if="{{polling}}">
+    <text>有任务生成中，正在自动刷新...</text>
+  </view>
   <view class="history-grid" wx:if="{{list.length > 0}}">
     <view
       wx:for="{{list}}"

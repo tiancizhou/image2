@@ -30,6 +30,7 @@ Page({
     hasMore: true,
     loading: false,
     baseUrl: '',
+    polling: false,
   },
 
   onLoad() {
@@ -39,6 +40,14 @@ Page({
   onShow() {
     this.setData({ list: [], page: 1, hasMore: true });
     this.loadList();
+  },
+
+  onHide() {
+    this.stopPolling();
+  },
+
+  onUnload() {
+    this.stopPolling();
   },
 
   async loadList() {
@@ -61,9 +70,57 @@ Page({
         hasMore: newList.length < res.total,
         loading: false,
       });
+      this.updatePolling();
     } catch {
       this.setData({ loading: false });
     }
+  },
+
+  async refreshFirstPage() {
+    if (this.data.loading) return;
+    this.setData({ loading: true });
+    try {
+      await ensureLogin();
+      const res = await request('/api/images/history?page=1&pageSize=20');
+      const normalized = res.list.map(item => ({
+        ...item,
+        image_url: resolveImageUrl(item.result_image_path),
+        status_text: statusText(item.status),
+        status_class: item.status === 'failed' ? 'failed' : (item.status === 'pending' ? 'pending' : 'success'),
+        created_at_text: formatDateTime(item.created_at),
+      }));
+      this.setData({
+        list: normalized,
+        page: 2,
+        hasMore: normalized.length < res.total,
+        loading: false,
+      });
+      this.updatePolling();
+    } catch {
+      this.setData({ loading: false });
+    }
+  },
+
+  updatePolling() {
+    const hasPending = this.data.list.some(item => item.status === 'pending');
+    if (hasPending) this.startPolling();
+    else this.stopPolling();
+  },
+
+  startPolling() {
+    if (this.pollTimer) return;
+    this.setData({ polling: true });
+    this.pollTimer = setInterval(() => {
+      this.refreshFirstPage();
+    }, 3000);
+  },
+
+  stopPolling() {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+    if (this.data.polling) this.setData({ polling: false });
   },
 
   loadMore() {

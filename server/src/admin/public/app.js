@@ -268,7 +268,7 @@ function renderChannelForm(channel = {}) {
       <div class="settings-grid compact">
         <label>优先级<input id="channel-priority" type="number" value="${channel.priority ?? 100}"></label>
         <label>超时 ms<input id="channel-timeout" type="number" min="1000" value="${channel.timeout_ms ?? 120000}"></label>
-        <label>失败阈值<input id="channel-threshold" type="number" min="1" max="20" value="${channel.failure_threshold ?? 3}"></label>
+        <label>失败阈值<input id="channel-threshold" type="number" min="1" max="20" value="${channel.failure_threshold ?? 2}"></label>
         <label>冷却秒数<input id="channel-cooldown" type="number" min="10" value="${channel.cooldown_seconds ?? 300}"></label>
       </div>
       <label class="toggle-row"><input id="channel-enabled" type="checkbox" ${channel.enabled === false ? '' : 'checked'}> 启用渠道</label>
