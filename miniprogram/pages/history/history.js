@@ -80,4 +80,17 @@ Page({
     this.setData({ list: [], page: 1, hasMore: true });
     this.loadList().then(() => wx.stopPullDownRefresh());
   },
+  onShareAppMessage() {
+    return {
+      title: '梦倩绘境：把灵感画成梦境',
+      path: '/pages/index/index',
+    };
+  },
+
+  onShareTimeline() {
+    return {
+      title: '梦倩绘境：把灵感画成梦境',
+      query: '',
+    };
+  },
 });

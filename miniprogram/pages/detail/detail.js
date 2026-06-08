@@ -21,17 +21,23 @@ Page({
   data: {
     item: null,
     baseUrl: '',
+    isSharedView: false,
   },
 
   onLoad(options) {
-    this.setData({ baseUrl: app.globalData.baseUrl });
-    if (options.id) this.loadDetail(options.id);
+    this.setData({
+      baseUrl: app.globalData.baseUrl,
+      isSharedView: options.share === '1',
+    });
+    if (options.id) this.loadDetail(options.id, options.share === '1');
   },
 
-  async loadDetail(id) {
+  async loadDetail(id, shared = false) {
     try {
-      await ensureLogin();
-      const item = await request(`/api/images/${id}`);
+      if (!shared) await ensureLogin();
+      const item = await request(shared ? `/api/images/share/${id}` : `/api/images/${id}`, {
+        auth: !shared,
+      });
       if (item.result_image_path && item.result_image_path.includes(',')) {
         item.result_image_path = item.result_image_path.split(',')[0];
       }
@@ -39,9 +45,23 @@ Page({
       item.created_at_text = formatDateTime(item.created_at);
       item.type_text = item.type === 'text2img' ? '文生图' : '图生图';
       this.setData({ item });
+      this.prepareShareImage(item.image_url);
     } catch (err) {
       wx.showToast({ title: '加载失败', icon: 'none' });
     }
+  },
+
+  prepareShareImage(url) {
+    if (!url || !/^https:\/\//i.test(url)) return;
+    wx.downloadFile({
+      url,
+      success: (res) => {
+        if (res.statusCode !== 200 || !res.tempFilePath) return;
+        this.setData({
+          'item.share_image_url': res.tempFilePath,
+        });
+      },
+    });
   },
 
   onSaveImage() {
@@ -84,6 +104,10 @@ Page({
     wx.switchTab({ url: '/pages/index/index' });
   },
 
+  goCreate() {
+    wx.switchTab({ url: '/pages/index/index' });
+  },
+
   onDelete() {
     const { item } = this.data;
     wx.showModal({
@@ -102,5 +126,29 @@ Page({
         }
       },
     });
+  },
+
+  onShareAppMessage() {
+    const { item } = this.data;
+    if (item && item.status === 'success') {
+      return {
+        title: '我用梦倩绘境生成了一张图',
+        path: `/pages/detail/detail?id=${item.id}&share=1`,
+        imageUrl: item.share_image_url || item.image_url || '',
+      };
+    }
+    return {
+      title: '梦倩绘境：把灵感画成梦境',
+      path: '/pages/index/index',
+    };
+  },
+
+  onShareTimeline() {
+    const { item } = this.data;
+    return {
+      title: item && item.status === 'success' ? '我用梦倩绘境生成了一张图' : '梦倩绘境：把灵感画成梦境',
+      query: item && item.status === 'success' ? `id=${item.id}&share=1` : '',
+      imageUrl: item?.share_image_url || item?.image_url || '',
+    };
   },
 });

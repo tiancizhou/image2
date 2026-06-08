@@ -40,13 +40,17 @@
   </view>
 
   <view class="card action-card">
-    <view class="action-btn action-primary" bindtap="onRemix">
+    <view class="action-btn action-primary" wx:if="{{!isSharedView}}" bindtap="onRemix">
       <text>基于此图再创作</text>
       <text class="action-sub">带入图生图继续调整</text>
     </view>
+    <view class="action-btn action-primary" wx:else bindtap="goCreate">
+      <text>我也去创作</text>
+      <text class="action-sub">打开梦倩绘境生成你的图片</text>
+    </view>
     <view class="action-row">
       <view class="action-btn action-secondary" bindtap="onSaveImage">保存到相册</view>
-      <view class="action-btn action-danger" bindtap="onDelete">删除记录</view>
+      <view class="action-btn action-danger" wx:if="{{!isSharedView}}" bindtap="onDelete">删除记录</view>
     </view>
   </view>
 </view>

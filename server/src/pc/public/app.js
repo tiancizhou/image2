@@ -109,9 +109,9 @@ function setMode(mode) {
   els.modeBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
   els.uploadBox.classList.toggle('hidden', mode !== 'img2img');
   els.submitBtn.textContent = mode === 'img2img' ? '上传并生成' : '开始生成';
-  els.taskTitle.textContent = mode === 'img2img' ? '上传参考图，再描述你想改变什么' : '写下画面，交给 AI 延展';
+  els.taskTitle.textContent = mode === 'img2img' ? '让一张旧图长出新方向' : '先写下你想看的画面';
   els.taskDesc.textContent = mode === 'img2img'
-    ? '适合做风格迁移、局部重绘思路和基于旧图再创作。'
+    ? '上传参考图，再描述想保留和想改变的部分。'
     : '描述主体、氛围、镜头、颜色和细节，结果会更稳定。';
 }
 

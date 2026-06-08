@@ -230,4 +230,17 @@ Page({
       },
     });
   },
+  onShareAppMessage() {
+    return {
+      title: '梦倩绘境：把灵感画成梦境',
+      path: '/pages/index/index',
+    };
+  },
+
+  onShareTimeline() {
+    return {
+      title: '梦倩绘境：把灵感画成梦境',
+      query: '',
+    };
+  },
 });

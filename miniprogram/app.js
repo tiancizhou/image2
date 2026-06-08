@@ -10,5 +10,11 @@ App({
     if (token) {
       this.globalData.token = token;
     }
+    if (wx.showShareMenu) {
+      wx.showShareMenu({
+        withShareTicket: true,
+        menus: ['shareAppMessage', 'shareTimeline'],
+      });
+    }
   },
 });

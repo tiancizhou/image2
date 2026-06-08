@@ -20,6 +20,21 @@ router.get('/profile', auth, async (req, res, next) => {
   }
 });
 
+router.get('/profile/summary', auth, async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT id, nickname, avatar_url, points, consecutive_checkins, last_checkin_date, created_at FROM users WHERE id = $1',
+      [req.userId]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: '用户不存在' });
+
+    const checkin = await checkinService.getStatus(req.userId);
+    res.json({ profile: rows[0], checkin });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/points', auth, async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;

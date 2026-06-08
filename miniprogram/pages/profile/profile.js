@@ -1,5 +1,8 @@
 const { request, ensureLogin } = require('../../utils/api');
 
+const PROFILE_CACHE_KEY = 'profile_summary_cache';
+const PROFILE_CACHE_TTL = 5000;
+
 Page({
   data: {
     userInfo: {},
@@ -9,25 +12,45 @@ Page({
     checkedIn: false,
     showPoints: false,
     pointLogs: [],
+    loadingProfile: false,
+    lastLoadedAt: 0,
   },
 
   onShow() {
+    this.renderCachedProfile();
     this.loadProfile();
   },
 
+  renderCachedProfile() {
+    const cached = wx.getStorageSync(PROFILE_CACHE_KEY);
+    if (!cached || !cached.profile) return;
+    this.applyProfile(cached.profile, cached.checkin);
+  },
+
   async loadProfile() {
+    if (this.data.loadingProfile) return;
+    const now = Date.now();
+    if (now - this.data.lastLoadedAt < PROFILE_CACHE_TTL) return;
+    this.setData({ loadingProfile: true });
     try {
       await ensureLogin();
-      const profile = await request('/api/user/profile');
-      const status = await request('/api/user/checkin/status');
-      this.setData({
-        userInfo: profile,
-        displayName: `绘境用户 #${profile.id}`,
-        userCode: `UID ${profile.id}`,
-        points: profile.points || 0,
-        checkedIn: status.checkedIn,
-      });
-    } catch {}
+      const summary = await request('/api/user/profile/summary');
+      wx.setStorageSync(PROFILE_CACHE_KEY, summary);
+      this.applyProfile(summary.profile, summary.checkin);
+      this.setData({ lastLoadedAt: Date.now(), loadingProfile: false });
+    } catch {
+      this.setData({ loadingProfile: false });
+    }
+  },
+
+  applyProfile(profile, checkin = {}) {
+    this.setData({
+      userInfo: profile,
+      displayName: `绘境用户 #${profile.id}`,
+      userCode: `UID ${profile.id}`,
+      points: profile.points || 0,
+      checkedIn: !!checkin.checkedIn,
+    });
   },
 
   goCheckin() {
@@ -41,6 +64,10 @@ Page({
   async goPoints() {
     if (this.data.showPoints) {
       this.setData({ showPoints: false });
+      return;
+    }
+    if (this.data.pointLogs.length > 0) {
+      this.setData({ showPoints: true });
       return;
     }
     try {
@@ -64,5 +91,18 @@ Page({
       refund: '返还',
     };
     return map[type] || '积分';
+  },
+  onShareAppMessage() {
+    return {
+      title: '梦倩绘境：把灵感画成梦境',
+      path: '/pages/index/index',
+    };
+  },
+
+  onShareTimeline() {
+    return {
+      title: '梦倩绘境：把灵感画成梦境',
+      query: '',
+    };
   },
 });

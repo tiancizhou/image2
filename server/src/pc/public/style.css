@@ -1018,3 +1018,311 @@ select:focus {
     height: 188px;
   }
 }
+
+/* Premium pass: quiet studio, less poster-like, more product-like. */
+:root {
+  --ink: #241f1b;
+  --muted: #8a7c6e;
+  --paper: #f7efe4;
+  --panel: rgba(255, 252, 246, 0.74);
+  --line: rgba(63, 45, 31, 0.10);
+  --rose: #bd5f56;
+  --rose-deep: #8f423d;
+  --gold: #c79a52;
+  --jade: #3f8f80;
+  --shadow: 0 18px 54px rgba(52, 35, 24, 0.10);
+}
+
+body {
+  background:
+    radial-gradient(circle at 72% 4%, rgba(199, 154, 82, 0.13), transparent 34rem),
+    radial-gradient(circle at 8% 12%, rgba(189, 95, 86, 0.10), transparent 28rem),
+    linear-gradient(135deg, #f8efe5 0%, #f4eadf 52%, #eee0d4 100%);
+}
+
+body::before {
+  opacity: 0.42;
+  background-size: 54px 54px;
+  background-image:
+    linear-gradient(rgba(70, 48, 32, 0.032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(70, 48, 32, 0.032) 1px, transparent 1px);
+}
+
+.app-shell {
+  grid-template-columns: 258px minmax(0, 1fr);
+}
+
+.side-panel {
+  padding: 34px 22px 24px;
+  background: rgba(255, 246, 235, 0.66);
+  box-shadow: inset -1px 0 0 rgba(63, 45, 31, 0.06);
+}
+
+.brand-glyph,
+.avatar {
+  background:
+    linear-gradient(145deg, rgba(143, 66, 61, 0.96), rgba(199, 154, 82, 0.88));
+  box-shadow: 0 12px 28px rgba(143, 66, 61, 0.16);
+}
+
+.brand-mark strong {
+  font-size: 19px;
+  letter-spacing: 0.02em;
+}
+
+.brand-mark small {
+  font-size: 13px;
+}
+
+.nav-list {
+  gap: 8px;
+}
+
+.nav-item {
+  padding: 13px 18px;
+  border-radius: 16px;
+  font-size: 15px;
+}
+
+.nav-item.active,
+.nav-item:hover {
+  background: rgba(255, 252, 246, 0.72);
+  box-shadow: 0 12px 32px rgba(52, 35, 24, 0.08);
+}
+
+.profile-card {
+  border-radius: 22px;
+  background: rgba(255, 252, 246, 0.54);
+  box-shadow: 0 12px 34px rgba(52, 35, 24, 0.07);
+}
+
+.main-panel {
+  padding: 38px 44px;
+}
+
+.hero {
+  padding: 34px 36px;
+  border-radius: 34px;
+  background:
+    linear-gradient(120deg, rgba(255, 253, 248, 0.80), rgba(255, 247, 237, 0.60));
+  box-shadow: 0 20px 68px rgba(52, 35, 24, 0.08);
+}
+
+.eyebrow {
+  margin-bottom: 14px;
+  color: rgba(36, 31, 27, 0.48);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+}
+
+h1 {
+  max-width: 680px;
+  font-size: clamp(42px, 4vw, 64px);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  font-weight: 700;
+}
+
+.hero-copy {
+  max-width: 660px;
+  margin-top: 18px;
+  color: rgba(36, 31, 27, 0.58);
+  font-size: 16px;
+  line-height: 1.9;
+}
+
+.session-pill,
+.ghost-btn,
+.solid-btn,
+.submit-btn,
+.load-more,
+.close-btn {
+  min-height: 42px;
+  border-radius: 999px;
+  font-size: 15px;
+}
+
+.solid-btn,
+.submit-btn {
+  background: linear-gradient(135deg, #9d4942, #c76258);
+  box-shadow: 0 14px 34px rgba(143, 66, 61, 0.18);
+}
+
+.ghost-btn,
+.load-more,
+.close-btn {
+  background: rgba(255, 252, 246, 0.68);
+  box-shadow: 0 10px 26px rgba(52, 35, 24, 0.06);
+}
+
+.auth-card,
+.composer-card,
+.status-card,
+.history-view,
+.account-view,
+.detail-card {
+  border-radius: 32px;
+  background:
+    linear-gradient(140deg, rgba(255, 253, 248, 0.86), rgba(255, 249, 240, 0.68));
+  box-shadow: 0 18px 56px rgba(52, 35, 24, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.auth-card {
+  padding: 30px 32px;
+  grid-template-columns: minmax(0, 1fr) 236px;
+}
+
+.auth-card::before {
+  width: 150px;
+  height: 150px;
+  border-radius: 50px;
+  opacity: 0.55;
+  filter: blur(1px);
+}
+
+.auth-card h2,
+.status-card h2,
+.section-head h2 {
+  font-size: clamp(25px, 2.2vw, 34px);
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+
+.auth-copy {
+  max-width: 620px;
+  font-size: 15px;
+  line-height: 1.95;
+}
+
+.login-steps span,
+.chip-btn {
+  color: rgba(36, 31, 27, 0.62);
+  background: rgba(255, 252, 246, 0.62);
+}
+
+.qr-box {
+  min-height: 238px;
+  border-radius: 26px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+}
+
+.qr-box::before {
+  opacity: 0.22;
+}
+
+.qr-box img {
+  width: 192px;
+  height: 192px;
+}
+
+.composer-card {
+  padding: 26px;
+}
+
+.mode-switch {
+  border-radius: 18px;
+  background: rgba(63, 45, 31, 0.055);
+}
+
+.mode-btn {
+  border-radius: 14px;
+  font-size: 15px;
+}
+
+.mode-btn.active {
+  background: #2d2823;
+}
+
+textarea,
+input,
+select {
+  border-radius: 17px;
+  background: rgba(255, 253, 248, 0.76);
+}
+
+textarea {
+  min-height: 176px;
+  line-height: 1.75;
+}
+
+.status-card {
+  min-height: 438px;
+}
+
+.status-orb {
+  width: 118px;
+  height: 118px;
+  border-radius: 36px;
+  margin-bottom: 34px;
+  opacity: 0.88;
+  box-shadow: inset 0 0 28px rgba(255, 255, 255, 0.36), 0 24px 54px rgba(126, 67, 47, 0.16);
+}
+
+.status-card p {
+  color: rgba(143, 66, 61, 0.74);
+}
+
+.status-card span {
+  font-size: 15px;
+}
+
+.quick-stats div {
+  border-radius: 17px;
+  background: rgba(255, 252, 246, 0.50);
+}
+
+.history-grid {
+  gap: 16px;
+}
+
+.history-card {
+  border-radius: 24px;
+  background: rgba(255, 252, 246, 0.58);
+}
+
+.history-card:hover {
+  box-shadow: 0 18px 46px rgba(52, 35, 24, 0.10);
+}
+
+.thumb {
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(143, 66, 61, 0.10), rgba(199, 154, 82, 0.13)),
+    #f6eadc;
+}
+
+.account-card,
+.points-card {
+  background: rgba(255, 252, 246, 0.58);
+  box-shadow: 0 14px 42px rgba(52, 35, 24, 0.06);
+}
+
+.account-card strong {
+  font-size: 48px;
+}
+
+@media (max-width: 960px) {
+  .main-panel {
+    padding: 22px;
+  }
+
+  h1 {
+    font-size: 42px;
+  }
+}
+
+@media (max-width: 620px) {
+  .hero {
+    padding: 24px;
+  }
+
+  h1 {
+    font-size: 34px;
+  }
+
+  .auth-card {
+    padding: 24px;
+  }
+}
