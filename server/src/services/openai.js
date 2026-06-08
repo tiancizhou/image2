@@ -1,7 +1,8 @@
 const channels = require('./channels');
 
 const RETRYABLE_UPSTREAM_STATUSES = new Set([429, 500, 502, 503, 504]);
-const MAX_CHANNEL_ATTEMPTS = 2;
+const MAX_FAST_CHANNEL_ATTEMPTS = 5;
+const MAX_TIMEOUT_CHANNEL_ATTEMPTS = 2;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -10,14 +11,22 @@ function sleep(ms) {
 function isRetryableError(err) {
   if (err.upstreamStatus && RETRYABLE_UPSTREAM_STATUSES.has(err.upstreamStatus)) return true;
   const message = String(err.message || '').toLowerCase();
-  return message.includes('aborted due to timeout')
-    || message.includes('timeouterror')
+  return isTimeoutError(err)
     || message.includes('upstream_error')
     || message.includes('upstream request failed');
 }
 
+function isTimeoutError(err) {
+  const message = String(err.message || '').toLowerCase();
+  return message.includes('aborted due to timeout') || message.includes('timeouterror');
+}
+
+function maxAttemptsForError(err) {
+  return isTimeoutError(err) ? MAX_TIMEOUT_CHANNEL_ATTEMPTS : MAX_FAST_CHANNEL_ATTEMPTS;
+}
+
 function retryDelayMs(attempt) {
-  return 600 * attempt;
+  return Math.min(400 * attempt, 1600);
 }
 
 async function requestChannel(channel, endpoint, body, isMultipart = false, timeoutCapMs = 90000) {
@@ -60,15 +69,14 @@ async function requestChannel(channel, endpoint, body, isMultipart = false, time
 
 async function requestChannelWithRetry(channel, handler) {
   let lastErr = null;
-  for (let attempt = 1; attempt <= MAX_CHANNEL_ATTEMPTS; attempt += 1) {
+  for (let attempt = 1; attempt <= MAX_FAST_CHANNEL_ATTEMPTS; attempt += 1) {
     try {
-      if (attempt > 1) {
-        console.log(`[OpenAI] channel=${channel.name} id=${channel.id} retry=${attempt}/${MAX_CHANNEL_ATTEMPTS}`);
-      }
       return await handler(channel);
     } catch (err) {
       lastErr = err;
-      if (attempt >= MAX_CHANNEL_ATTEMPTS || !isRetryableError(err)) throw err;
+      const maxAttempts = maxAttemptsForError(err);
+      if (attempt >= maxAttempts || !isRetryableError(err)) throw err;
+      console.log(`[OpenAI] channel=${channel.name} id=${channel.id} retry=${attempt + 1}/${maxAttempts}`);
       await sleep(retryDelayMs(attempt));
     }
   }
