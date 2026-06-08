@@ -77,10 +77,11 @@ async function generateImage({ prompt, model, size, n }) {
   ));
 }
 
-async function editImage({ prompt, model, n, imageBuffer, filename }) {
+async function editImage({ prompt, model, size, n, imageBuffer, filename }) {
   const formData = new FormData();
   formData.append('model', model);
   formData.append('prompt', prompt);
+  if (size) formData.append('size', size);
   formData.append('n', String(n || 1));
   formData.append('image', new Blob([imageBuffer]), filename);
 

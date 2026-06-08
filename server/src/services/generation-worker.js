@@ -136,6 +136,7 @@ async function runImageEdit(job) {
   const { data, channel } = await openai.editImage({
     prompt: job.prompt,
     model: job.model,
+    size: job.size,
     n: 1,
     imageBuffer,
     filename: path.basename(job.source_image_path),
