@@ -17,6 +17,16 @@ function generationLabel(type) {
   return type === 'img2img' ? '图生图' : '文生图';
 }
 
+async function hasEnabledChannels() {
+  const { rows } = await db.query(
+    `SELECT 1 FROM api_channels
+     WHERE enabled = TRUE
+       AND (circuit_status <> 'open' OR circuit_open_until IS NULL OR circuit_open_until <= NOW())
+     LIMIT 1`
+  );
+  return rows.length > 0;
+}
+
 async function createGenerationAndReservePoints({ userId, type, prompt, model, size, sourceImagePath, cost }) {
   const client = await db.getClient();
   try {
@@ -60,8 +70,21 @@ async function createGenerationAndReservePoints({ userId, type, prompt, model, s
   }
 }
 
+router.get('/availability', async (req, res, next) => {
+  try {
+    const available = await hasEnabledChannels();
+    res.json({
+      available,
+      mode: available ? 'creative' : 'gallery',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/generate', auth, async (req, res, next) => {
   try {
+    if (!await hasEnabledChannels()) return res.status(503).json({ error: '创作服务暂未开放' });
     const { prompt, model, size } = req.body;
     if (!prompt) return res.status(400).json({ error: '请输入提示词' });
     if (size && !VALID_SIZES.includes(size)) return res.status(400).json({ error: '不支持的尺寸' });
@@ -89,6 +112,7 @@ router.post('/generate', auth, async (req, res, next) => {
 router.post('/edit', auth, upload.single('image'), async (req, res, next) => {
   let sourceFilename = null;
   try {
+    if (!await hasEnabledChannels()) return res.status(503).json({ error: '创作服务暂未开放' });
     const { prompt, model, size, source_generation_id } = req.body;
     if (!prompt) return res.status(400).json({ error: '请输入提示词' });
     if (!req.file && !source_generation_id) return res.status(400).json({ error: '请上传图片' });

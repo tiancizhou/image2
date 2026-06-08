@@ -29,15 +29,31 @@ Page({
     resultImage: '',
     pointsCost: 1,
     userPoints: 0,
+    serviceAvailable: false,
+    serviceChecked: false,
   },
 
   onLoad() {
+    this.loadServiceAvailability();
     this.loadUserPoints();
   },
 
   onShow() {
+    this.loadServiceAvailability();
     this.loadUserPoints();
-    this.consumeRemixDraft();
+    if (this.data.serviceAvailable) this.consumeRemixDraft();
+  },
+
+  async loadServiceAvailability() {
+    try {
+      const data = await request('/api/images/availability', { auth: false });
+      this.setData({
+        serviceAvailable: data.available !== false,
+        serviceChecked: true,
+      });
+    } catch (err) {
+      this.setData({ serviceAvailable: true, serviceChecked: true });
+    }
   },
 
   async loadUserPoints() {
@@ -147,6 +163,10 @@ Page({
   async onCreate() {
     const { mode, prompt, size, sourceFilePath, sourceGenerationId, generating, userPoints, pointsCost, imagePromptFallback } = this.data;
     if (generating) return;
+    if (!this.data.serviceAvailable) {
+      wx.showToast({ title: '创作服务暂未开放', icon: 'none' });
+      return;
+    }
     if (mode === 'edit' && !sourceFilePath && !sourceGenerationId) {
       wx.showToast({ title: '请先上传图片', icon: 'none' });
       return;
