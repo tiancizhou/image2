@@ -34,6 +34,16 @@
       </view>
       <text class="menu-text">积分记录</text>
     </view>
+    <view class="menu-item" bindtap="openCommunity">
+      <view class="menu-icon" style="background:linear-gradient(135deg,#233026,#70a342);">
+        <text style="font-size:36rpx;">👥</text>
+      </view>
+      <view class="menu-main">
+        <text class="menu-text">加交流群领积分</text>
+        <text class="menu-sub">添加作者微信，进群领取福利</text>
+      </view>
+      <text class="menu-badge community">福利</text>
+    </view>
   </view>
 
   <!-- 积分记录 -->
@@ -48,4 +58,19 @@
     </view>
   </view>
 
+  <view class="community-modal" wx:if="{{showCommunity}}">
+    <view class="community-mask" bindtap="closeCommunity"></view>
+    <view class="community-card">
+      <view class="community-mark">梦</view>
+      <text class="community-title">加入梦倩绘境交流群</text>
+      <text class="community-desc">长按或保存下方微信名片码，添加作者微信后备注「梦倩绘境」，进群领取积分和交流提示词。</text>
+      <view class="wechat-card-box">
+        <image class="wechat-card-image" src="{{authorWechatCard}}" mode="aspectFit" show-menu-by-longpress />
+      </view>
+      <view class="community-actions">
+        <button class="community-btn secondary" bindtap="closeCommunity">关闭</button>
+        <button class="community-btn primary" bindtap="previewWechatCard">查看名片码</button>
+      </view>
+    </view>
+  </view>
 </view>

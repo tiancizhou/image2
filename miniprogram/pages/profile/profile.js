@@ -2,6 +2,7 @@ const { request, ensureLogin } = require('../../utils/api');
 
 const PROFILE_CACHE_KEY = 'profile_summary_cache';
 const PROFILE_CACHE_TTL = 5000;
+const AUTHOR_WECHAT_CARD = '/static/author-wechat-card.jpg';
 
 Page({
   data: {
@@ -14,6 +15,8 @@ Page({
     pointLogs: [],
     loadingProfile: false,
     lastLoadedAt: 0,
+    showCommunity: false,
+    authorWechatCard: AUTHOR_WECHAT_CARD,
   },
 
   onShow() {
@@ -92,6 +95,22 @@ Page({
     };
     return map[type] || '积分';
   },
+
+  openCommunity() {
+    this.setData({ showCommunity: true });
+  },
+
+  closeCommunity() {
+    this.setData({ showCommunity: false });
+  },
+
+  previewWechatCard() {
+    wx.previewImage({
+      current: this.data.authorWechatCard,
+      urls: [this.data.authorWechatCard],
+    });
+  },
+
   onShareAppMessage() {
     return {
       title: '梦倩绘境：把灵感画成梦境',

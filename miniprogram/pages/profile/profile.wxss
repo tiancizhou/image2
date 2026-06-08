@@ -84,6 +84,22 @@
   font-weight: 500;
 }
 
+.menu-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-main .menu-text {
+  flex: none;
+}
+
+.menu-sub {
+  margin-top: 6rpx;
+  color: #9d8d78;
+  font-size: 22rpx;
+}
+
 .menu-badge {
   font-size: 22rpx;
   padding: 6rpx 16rpx;
@@ -95,6 +111,10 @@
 .menu-badge.done {
   background: #dfe6e9;
   color: #b2bec3;
+}
+
+.menu-badge.community {
+  background: linear-gradient(135deg, #233026, #70a342);
 }
 
 .section-title-inner {
@@ -129,3 +149,110 @@
 .log-amount { font-size: 28rpx; font-weight: 600; }
 .positive { color: #00b894; }
 .negative { color: #e17055; }
+
+.community-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+}
+
+.community-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(35, 48, 38, 0.48);
+  backdrop-filter: blur(8rpx);
+}
+
+.community-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 44rpx 36rpx 34rpx;
+  border-radius: 38rpx;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(112, 163, 66, 0.16), transparent 280rpx),
+    #fffaf0;
+  box-shadow: 0 28rpx 80rpx rgba(35, 48, 38, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.community-mark {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff8e8;
+  background: linear-gradient(135deg, #233026, #70a342);
+  font-size: 44rpx;
+  font-weight: 900;
+}
+
+.community-title {
+  margin-top: 28rpx;
+  color: #233026;
+  font-size: 34rpx;
+  font-weight: 800;
+}
+
+.community-desc {
+  margin-top: 16rpx;
+  color: #8c7b65;
+  font-size: 25rpx;
+  line-height: 1.8;
+  text-align: center;
+}
+
+.wechat-card-box {
+  width: 100%;
+  margin-top: 30rpx;
+  padding: 18rpx;
+  border-radius: 30rpx;
+  background: #f4ead9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.wechat-card-image {
+  width: 430rpx;
+  height: 560rpx;
+  border-radius: 24rpx;
+  background: #fff;
+}
+
+.community-actions {
+  width: 100%;
+  display: flex;
+  gap: 18rpx;
+  margin-top: 30rpx;
+}
+
+.community-btn {
+  flex: 1;
+  height: 86rpx;
+  line-height: 86rpx;
+  border-radius: 999rpx;
+  font-size: 28rpx;
+}
+
+.community-btn::after {
+  border: 0;
+}
+
+.community-btn.secondary {
+  color: #6e5e4a;
+  background: #efe3d0;
+}
+
+.community-btn.primary {
+  color: #fffaf0;
+  background: linear-gradient(135deg, #233026, #70a342);
+}
