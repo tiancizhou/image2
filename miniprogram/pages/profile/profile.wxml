@@ -1,20 +1,23 @@
 <view class="page">
-  <!-- 头像积分卡 -->
+  <!-- 个人信息卡 -->
   <view class="profile-header card">
     <view class="avatar-fallback">
       <text>梦</text>
     </view>
     <text class="nickname">{{displayName}}</text>
     <text class="user-code">{{userCode}}</text>
-    <view class="points-badge">
+    <view class="points-badge" wx:if="{{serviceAvailable}}">
       <text class="points-num">{{points}}</text>
       <text class="points-label">积分</text>
+    </view>
+    <view class="profile-note" wx:else>
+      <text>灵感整理与画面参考空间</text>
     </view>
   </view>
 
   <!-- 功能菜单 -->
   <view class="card">
-    <view class="menu-item" bindtap="goCheckin">
+    <view class="menu-item" wx:if="{{serviceAvailable}}" bindtap="goCheckin">
       <view class="menu-icon" style="background:linear-gradient(135deg,#55efc4,#00b894);">
         <text style="font-size:36rpx;">📅</text>
       </view>
@@ -22,13 +25,13 @@
       <text class="menu-badge" wx:if="{{!checkedIn}}">签到领积分</text>
       <text class="menu-badge done" wx:else>已签到</text>
     </view>
-    <view class="menu-item" bindtap="goCdk">
+    <view class="menu-item" wx:if="{{serviceAvailable}}" bindtap="goCdk">
       <view class="menu-icon" style="background:linear-gradient(135deg,#fab1a0,#fd79a8);">
         <text style="font-size:36rpx;">🎁</text>
       </view>
       <text class="menu-text">兑换码</text>
     </view>
-    <view class="menu-item" bindtap="goPoints">
+    <view class="menu-item" wx:if="{{serviceAvailable}}" bindtap="goPoints">
       <view class="menu-icon" style="background:linear-gradient(135deg,#a29bfe,#6c5ce7);">
         <text style="font-size:36rpx;">💰</text>
       </view>
@@ -39,15 +42,15 @@
         <text style="font-size:36rpx;">👥</text>
       </view>
       <view class="menu-main">
-        <text class="menu-text">加交流群领积分</text>
-        <text class="menu-sub">添加作者微信，进群领取福利</text>
+        <text class="menu-text">{{serviceAvailable ? '加交流群领积分' : '联系作者'}}</text>
+        <text class="menu-sub">{{serviceAvailable ? '添加作者微信，进群领取福利' : '添加作者微信，交流画面灵感'}}</text>
       </view>
-      <text class="menu-badge community">福利</text>
+      <text class="menu-badge community">{{serviceAvailable ? '福利' : '名片码'}}</text>
     </view>
   </view>
 
-  <!-- 积分记录 -->
-  <view class="card" wx:if="{{showPoints}}">
+  <!-- 明细记录 -->
+  <view class="card" wx:if="{{serviceAvailable && showPoints}}">
     <text class="section-title-inner">积分变动</text>
     <view wx:for="{{pointLogs}}" wx:key="id" class="log-item">
       <view class="log-left">
@@ -62,8 +65,8 @@
     <view class="community-mask" bindtap="closeCommunity"></view>
     <view class="community-card">
       <view class="community-mark">梦</view>
-      <text class="community-title">加入梦倩绘境交流群</text>
-      <text class="community-desc">长按或保存下方微信名片码，添加作者微信后备注「梦倩绘境」，进群领取积分和交流提示词。</text>
+      <text class="community-title">{{serviceAvailable ? '加入梦倩绘境交流群' : '联系梦倩绘境作者'}}</text>
+      <text class="community-desc">{{serviceAvailable ? '长按或保存下方微信名片码，添加作者微信后备注「梦倩绘境」，进群领取积分和交流提示词。' : '长按或保存下方微信名片码，添加作者微信后备注「梦倩绘境」，一起交流画面灵感与审美参考。'}}</text>
       <view class="wechat-card-box">
         <image class="wechat-card-image" src="{{authorWechatCard}}" mode="aspectFit" show-menu-by-longpress />
       </view>

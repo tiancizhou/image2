@@ -17,11 +17,22 @@ Page({
     lastLoadedAt: 0,
     showCommunity: false,
     authorWechatCard: AUTHOR_WECHAT_CARD,
+    serviceAvailable: false,
   },
 
   onShow() {
+    this.loadServiceAvailability();
     this.renderCachedProfile();
     this.loadProfile();
+  },
+
+  async loadServiceAvailability() {
+    try {
+      const data = await request('/api/images/availability', { auth: false });
+      this.setData({ serviceAvailable: data.available !== false });
+    } catch {
+      this.setData({ serviceAvailable: false });
+    }
   },
 
   renderCachedProfile() {

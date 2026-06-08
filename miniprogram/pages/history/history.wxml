@@ -1,8 +1,19 @@
 <view class="page">
-  <view class="polling-tip" wx:if="{{polling}}">
+  <view class="gallery-history" wx:if="{{!serviceAvailable}}">
+    <view class="gallery-mark">梦</view>
+    <text class="gallery-title">灵感收藏暂未开放</text>
+    <text class="gallery-desc">这里将用于整理你喜欢的画面、配色与构图参考。当前先展示为灵感空间，后续服务开放后会同步你的创作记录。</text>
+    <view class="idea-row">
+      <text>柔光天空</text>
+      <text>清透色彩</text>
+      <text>梦境构图</text>
+    </view>
+  </view>
+
+  <view class="polling-tip" wx:if="{{serviceAvailable && polling}}">
     <text>有任务生成中，正在自动刷新...</text>
   </view>
-  <view class="history-grid" wx:if="{{list.length > 0}}">
+  <view class="history-grid" wx:if="{{serviceAvailable && list.length > 0}}">
     <view
       wx:for="{{list}}"
       wx:key="id"
@@ -32,12 +43,12 @@
     </view>
   </view>
 
-  <view class="empty-state" wx:if="{{!loading && list.length === 0}}">
+  <view class="empty-state" wx:if="{{serviceAvailable && !loading && list.length === 0}}">
     <text style="font-size:48rpx;">🎨</text>
     <text>还没有生成记录哦~</text>
   </view>
 
-  <view class="load-more" wx:if="{{hasMore}}">
+  <view class="load-more" wx:if="{{serviceAvailable && hasMore}}">
     <text class="load-more-text" bindtap="loadMore">加载更多</text>
   </view>
 </view>

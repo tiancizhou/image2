@@ -32,6 +32,7 @@ Page({
     loading: false,
     baseUrl: '',
     polling: false,
+    serviceAvailable: false,
   },
 
   onLoad() {
@@ -39,6 +40,27 @@ Page({
   },
 
   onShow() {
+    this.loadServiceAvailability();
+  },
+
+  async loadServiceAvailability() {
+    try {
+      const data = await request('/api/images/availability', { auth: false });
+      const serviceAvailable = data.available !== false;
+      this.setData({ serviceAvailable });
+      if (!serviceAvailable) {
+        this.stopPolling();
+        this.setData({ list: [], page: 1, hasMore: false, loading: false });
+        return;
+      }
+      this.loadHistoryOnShow();
+    } catch {
+      this.setData({ serviceAvailable: false, list: [], page: 1, hasMore: false, loading: false });
+      this.stopPolling();
+    }
+  },
+
+  loadHistoryOnShow() {
     if (this.data.list.length > 0) {
       this.refreshFirstPage();
       return;
@@ -56,7 +78,7 @@ Page({
   },
 
   async loadList() {
-    if (this.data.loading) return;
+    if (this.data.loading || !this.data.serviceAvailable) return;
     this.setData({ loading: true });
 
     try {
@@ -82,7 +104,7 @@ Page({
   },
 
   async refreshFirstPage() {
-    if (this.data.loading) return;
+    if (this.data.loading || !this.data.serviceAvailable) return;
     this.setData({ loading: true });
     try {
       await ensureLogin();
@@ -155,6 +177,7 @@ Page({
   },
 
   loadMore() {
+    if (!this.data.serviceAvailable) return;
     this.setData({ page: this.data.page + 1 });
     this.loadList();
   },
@@ -165,6 +188,10 @@ Page({
   },
 
   onPullDownRefresh() {
+    if (!this.data.serviceAvailable) {
+      this.loadServiceAvailability().then(() => wx.stopPullDownRefresh());
+      return;
+    }
     this.setData({ list: [], page: 1, hasMore: true });
     this.loadList().then(() => wx.stopPullDownRefresh());
   },
