@@ -129,6 +129,9 @@ async function runTextGenerate(job) {
 
 async function runImageEdit(job) {
   const imagePath = path.join('uploads', job.source_image_path);
+  if (!job.source_image_path || !fs.existsSync(imagePath)) {
+    throw new Error(`参考图文件不存在或已丢失: ${job.source_image_path || '-'}`);
+  }
   const imageBuffer = fs.readFileSync(imagePath);
   const { data, channel } = await openai.editImage({
     prompt: job.prompt,

@@ -480,7 +480,7 @@ async function renderGenerations(el) {
     ${pageHeader('生成记录', '追踪用户请求、模型、渠道命中和失败原因。')}
     <section class="card">
       <table>
-        <thead><tr><th>ID</th><th>用户</th><th>类型</th><th>提示词</th><th>模型</th><th>渠道</th><th>状态</th><th>时间</th></tr></thead>
+        <thead><tr><th>ID</th><th>用户</th><th>类型</th><th>提示词</th><th>模型</th><th>渠道</th><th>状态</th><th>失败原因</th><th>时间</th></tr></thead>
         <tbody>${data.list.map((g) => `
           <tr>
             <td>${g.id}</td>
@@ -488,12 +488,20 @@ async function renderGenerations(el) {
             <td>${typeLabel[g.type] || g.type}</td>
             <td class="prompt-cell" title="${escapeHtml(g.prompt)}">${escapeHtml(g.prompt)}</td>
             <td>${escapeHtml(g.model)}</td>
-            <td>${escapeHtml(g.channel_name || '-')}</td>
+            <td>${escapeHtml(g.channel_name || channelFallback(g.error_message))}</td>
             <td><span class="pill ${g.status === 'failed' ? 'bad' : ''}">${statusLabel[g.status] || g.status}</span></td>
+            <td class="prompt-cell" title="${escapeHtml(g.error_message || '')}">${escapeHtml(g.error_message || '-')}</td>
             <td>${fmtDate(g.created_at)}</td>
           </tr>`).join('')}</tbody>
       </table>
     </section>`;
+}
+
+function channelFallback(errorMessage) {
+  if (!errorMessage) return '-';
+  if (errorMessage.includes('没有可用的中转站渠道')) return '无可用渠道';
+  if (errorMessage.includes('source_image') || errorMessage.includes('no such file') || errorMessage.includes('ENOENT')) return '本地文件';
+  return '选择前/聚合失败';
 }
 
 async function renderCdk(el) {
