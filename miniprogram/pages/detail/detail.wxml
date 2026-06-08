@@ -17,10 +17,6 @@
     </view>
     <view class="info-grid">
       <view class="info-pill">
-        <text class="detail-label">模型</text>
-        <text class="detail-value">{{item.model}}</text>
-      </view>
-      <view class="info-pill">
         <text class="detail-label">尺寸</text>
         <text class="detail-value">{{item.size}}</text>
       </view>
