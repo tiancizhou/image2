@@ -28,7 +28,12 @@
         <text wx:if="{{sourceImage}}" class="text-action" bindtap="onRemoveSource">移除</text>
       </view>
       <view class="upload-area {{uploadAreaClass}}" bindtap="onChooseImage">
-        <image wx:if="{{sourceImage}}" class="preview-image" src="{{sourceImage}}" mode="aspectFit" />
+        <view wx:if="{{sourceFromHistory}}" class="history-source-card">
+          <text class="history-source-icon">✓</text>
+          <text class="history-source-title">已引用历史图片</text>
+          <text class="history-source-desc">无需重新下载或上传，提交后直接进入队列</text>
+        </view>
+        <image wx:elif="{{sourceImage}}" class="preview-image" src="{{sourceImage}}" mode="aspectFit" />
         <view wx:else class="upload-placeholder">
           <text class="upload-icon">+</text>
           <text class="upload-text">上传参考图</text>

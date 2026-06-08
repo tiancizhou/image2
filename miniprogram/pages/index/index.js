@@ -22,6 +22,7 @@ Page({
     sourceImage: '',
     sourceFilePath: '',
     sourceGenerationId: '',
+    sourceFromHistory: false,
     generating: false,
     showTaskModal: false,
     submittedTaskId: '',
@@ -110,6 +111,7 @@ Page({
       sourceImage: draft.imageUrl,
       sourceFilePath: '',
       sourceGenerationId: draft.sourceId || '',
+      sourceFromHistory: true,
       uploadAreaClass: 'has-image',
       size: draft.size || this.data.size,
       prompt,
@@ -130,6 +132,7 @@ Page({
           sourceImage: file.tempFilePath,
           sourceFilePath: file.tempFilePath,
           sourceGenerationId: '',
+          sourceFromHistory: false,
           uploadAreaClass: 'has-image',
           resultImage: '',
         });
@@ -138,7 +141,7 @@ Page({
   },
 
   onRemoveSource() {
-    this.setData({ sourceImage: '', sourceFilePath: '', sourceGenerationId: '', uploadAreaClass: '', resultImage: '' });
+    this.setData({ sourceImage: '', sourceFilePath: '', sourceGenerationId: '', sourceFromHistory: false, uploadAreaClass: '', resultImage: '' });
   },
 
   async onCreate() {

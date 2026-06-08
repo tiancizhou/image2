@@ -1,5 +1,6 @@
 const { request, ensureLogin } = require('../../utils/api');
 const app = getApp();
+const PAGE_SIZE = 10;
 
 function resolveImageUrl(path) {
   if (!path) return '';
@@ -38,6 +39,10 @@ Page({
   },
 
   onShow() {
+    if (this.data.list.length > 0) {
+      this.refreshFirstPage();
+      return;
+    }
     this.setData({ list: [], page: 1, hasMore: true });
     this.loadList();
   },
@@ -56,7 +61,7 @@ Page({
 
     try {
       await ensureLogin();
-      const res = await request(`/api/images/history?page=${this.data.page}&pageSize=20`);
+      const res = await request(`/api/images/history?page=${this.data.page}&pageSize=${PAGE_SIZE}`);
       const normalized = res.list.map(item => ({
         ...item,
         image_url: resolveImageUrl(item.result_image_path),
@@ -81,7 +86,7 @@ Page({
     this.setData({ loading: true });
     try {
       await ensureLogin();
-      const res = await request('/api/images/history?page=1&pageSize=20');
+      const res = await request(`/api/images/history?page=1&pageSize=${PAGE_SIZE}`);
       const normalized = res.list.map(item => ({
         ...item,
         image_url: resolveImageUrl(item.result_image_path),
@@ -89,16 +94,42 @@ Page({
         status_class: item.status === 'failed' ? 'failed' : (item.status === 'pending' ? 'pending' : 'success'),
         created_at_text: formatDateTime(item.created_at),
       }));
-      this.setData({
-        list: normalized,
-        page: 2,
-        hasMore: normalized.length < res.total,
-        loading: false,
-      });
+      this.patchFirstPage(normalized, res.total);
       this.updatePolling();
     } catch {
       this.setData({ loading: false });
     }
+  },
+
+  patchFirstPage(nextList, total) {
+    const current = this.data.list;
+    if (current.length === 0 || current.length !== nextList.length) {
+      this.setData({
+        list: nextList,
+        page: 2,
+        hasMore: nextList.length < total,
+        loading: false,
+      });
+      return;
+    }
+
+    const patch = { loading: false, page: 2, hasMore: nextList.length < total };
+    let changed = false;
+    nextList.forEach((next, index) => {
+      const prev = current[index];
+      if (!prev || prev.id !== next.id) {
+        patch[`list[${index}]`] = next;
+        changed = true;
+        return;
+      }
+      ['status', 'status_text', 'status_class', 'result_image_path', 'image_url', 'error_message'].forEach((key) => {
+        if (prev[key] !== next[key]) {
+          patch[`list[${index}].${key}`] = next[key];
+          changed = true;
+        }
+      });
+    });
+    this.setData(changed ? patch : { loading: false });
   },
 
   updatePolling() {
@@ -112,7 +143,7 @@ Page({
     this.setData({ polling: true });
     this.pollTimer = setInterval(() => {
       this.refreshFirstPage();
-    }, 3000);
+    }, 5000);
   },
 
   stopPolling() {
