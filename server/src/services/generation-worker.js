@@ -6,7 +6,8 @@ const imageStorage = require('./image-storage');
 const pointsService = require('./points');
 
 const queue = [];
-let running = false;
+const WORKER_CONCURRENCY = Number.parseInt(process.env.GENERATION_WORKER_CONCURRENCY || '2', 10);
+let runningCount = 0;
 
 function enqueue(job) {
   queue.push(job);
@@ -15,17 +16,18 @@ function enqueue(job) {
 }
 
 async function processQueue() {
-  if (running) return;
-  running = true;
-  while (queue.length > 0) {
+  while (runningCount < WORKER_CONCURRENCY && queue.length > 0) {
     const job = queue.shift();
-    try {
-      await runJob(job);
-    } catch (err) {
-      console.error(`[Worker] generation ${job.id} failed:`, err.message);
-    }
+    runningCount += 1;
+    runJob(job)
+      .catch((err) => {
+        console.error(`[Worker] generation ${job.id} failed:`, err.message);
+      })
+      .finally(() => {
+        runningCount -= 1;
+        setImmediate(processQueue);
+      });
   }
-  running = false;
 }
 
 async function restorePendingJobs() {

@@ -1,8 +1,7 @@
 const channels = require('./channels');
 
-const RETRYABLE_UPSTREAM_STATUSES = new Set([429, 500, 502, 503, 504]);
+const RETRYABLE_UPSTREAM_STATUSES = new Set([502]);
 const MAX_FAST_CHANNEL_ATTEMPTS = 5;
-const MAX_TIMEOUT_CHANNEL_ATTEMPTS = 2;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -10,32 +9,20 @@ function sleep(ms) {
 
 function isRetryableError(err) {
   if (err.upstreamStatus && RETRYABLE_UPSTREAM_STATUSES.has(err.upstreamStatus)) return true;
-  const message = String(err.message || '').toLowerCase();
-  return isTimeoutError(err)
-    || message.includes('upstream_error')
-    || message.includes('upstream request failed');
-}
-
-function isTimeoutError(err) {
-  const message = String(err.message || '').toLowerCase();
-  return message.includes('aborted due to timeout') || message.includes('timeouterror');
-}
-
-function maxAttemptsForError(err) {
-  return isTimeoutError(err) ? MAX_TIMEOUT_CHANNEL_ATTEMPTS : MAX_FAST_CHANNEL_ATTEMPTS;
+  return false;
 }
 
 function retryDelayMs(attempt) {
   return Math.min(400 * attempt, 1600);
 }
 
-async function requestChannel(channel, endpoint, body, isMultipart = false, timeoutCapMs = 90000) {
+async function requestChannel(channel, endpoint, body, isMultipart = false) {
   const url = `${channel.base_url.replace(/\/+$/, '')}${endpoint}`;
   const headers = { Authorization: `Bearer ${channel.api_key}` };
   if (!isMultipart) headers['Content-Type'] = 'application/json';
 
   const startedAt = Date.now();
-  const timeoutMs = Math.min(channel.timeout_ms || 120000, timeoutCapMs);
+  const timeoutMs = channel.timeout_ms || 120000;
   console.log(`[OpenAI] channel=${channel.name} id=${channel.id} POST ${url} timeout=${timeoutMs}ms`);
 
   let res;
@@ -74,7 +61,7 @@ async function requestChannelWithRetry(channel, handler) {
       return await handler(channel);
     } catch (err) {
       lastErr = err;
-      const maxAttempts = maxAttemptsForError(err);
+      const maxAttempts = MAX_FAST_CHANNEL_ATTEMPTS;
       if (attempt >= maxAttempts || !isRetryableError(err)) throw err;
       console.log(`[OpenAI] channel=${channel.name} id=${channel.id} retry=${attempt + 1}/${maxAttempts}`);
       await sleep(retryDelayMs(attempt));
@@ -117,8 +104,7 @@ async function generateImage({ prompt, model, size, n }) {
     channel,
     '/v1/images/generations',
     { model, prompt, n: n || 1, size },
-    false,
-    90000
+    false
   ));
 }
 
@@ -130,7 +116,7 @@ async function editImage({ prompt, model, size, n, imageBuffer, filename }) {
   formData.append('n', String(n || 1));
   formData.append('image', new Blob([imageBuffer]), filename);
 
-  return withFailover(async (channel) => requestChannel(channel, '/v1/images/edits', formData, true, 75000));
+  return withFailover(async (channel) => requestChannel(channel, '/v1/images/edits', formData, true));
 }
 
 module.exports = { generateImage, editImage };
