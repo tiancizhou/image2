@@ -20,6 +20,7 @@ const els = {
   userName: document.getElementById('userName'),
   userPoints: document.getElementById('userPoints'),
   accountPoints: document.getElementById('accountPoints'),
+  sessionText: document.getElementById('sessionText'),
   authPanel: document.getElementById('authPanel'),
   newQrBtn: document.getElementById('newQrBtn'),
   qrImage: document.getElementById('qrImage'),
@@ -30,6 +31,7 @@ const els = {
   fileName: document.getElementById('fileName'),
   createForm: document.getElementById('createForm'),
   promptInput: document.getElementById('promptInput'),
+  promptCount: document.getElementById('promptCount'),
   sizeSelect: document.getElementById('sizeSelect'),
   modelInput: document.getElementById('modelInput'),
   submitBtn: document.getElementById('submitBtn'),
@@ -44,6 +46,7 @@ const els = {
   cdkForm: document.getElementById('cdkForm'),
   cdkInput: document.getElementById('cdkInput'),
   checkinBtn: document.getElementById('checkinBtn'),
+  logoutBtn: document.getElementById('logoutBtn'),
   pointsList: document.getElementById('pointsList'),
 };
 
@@ -72,6 +75,10 @@ function bindEvents() {
   els.imageInput.addEventListener('change', () => {
     els.fileName.textContent = els.imageInput.files[0]?.name || '选择一张图片作为再创作基础';
   });
+  els.promptInput.addEventListener('input', updatePromptCount);
+  document.querySelectorAll('.chip-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyPromptTemplate(btn.dataset.prompt));
+  });
   els.createForm.addEventListener('submit', onSubmitCreate);
   document.getElementById('refreshBtn').addEventListener('click', () => refreshAll(true));
   document.getElementById('historyBtn').addEventListener('click', () => switchView('history'));
@@ -80,6 +87,7 @@ function bindEvents() {
   els.loadMoreBtn.addEventListener('click', () => loadHistory(false));
   els.cdkForm.addEventListener('submit', onRedeemCdk);
   els.checkinBtn.addEventListener('click', onCheckin);
+  els.logoutBtn.addEventListener('click', onLogout);
   document.querySelectorAll('[data-close="detail"]').forEach(el => {
     el.addEventListener('click', closeDetail);
   });
@@ -101,17 +109,35 @@ function setMode(mode) {
   els.modeBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
   els.uploadBox.classList.toggle('hidden', mode !== 'img2img');
   els.submitBtn.textContent = mode === 'img2img' ? '上传并生成' : '开始生成';
+  els.taskTitle.textContent = mode === 'img2img' ? '上传参考图，再描述你想改变什么' : '写下画面，交给 AI 延展';
+  els.taskDesc.textContent = mode === 'img2img'
+    ? '适合做风格迁移、局部重绘思路和基于旧图再创作。'
+    : '描述主体、氛围、镜头、颜色和细节，结果会更稳定。';
+}
+
+function applyPromptTemplate(text) {
+  els.promptInput.value = text || '';
+  updatePromptCount();
+  els.promptInput.focus();
+}
+
+function updatePromptCount() {
+  const length = els.promptInput.value.trim().length;
+  els.promptCount.textContent = `${length} 字`;
+  els.promptCount.classList.toggle('strong', length >= 20);
 }
 
 async function createWebLoginSession() {
   stopPolling();
   els.qrImage.removeAttribute('src');
   els.qrStatus.textContent = '正在生成小程序码...';
+  els.sessionText.textContent = '正在生成登录码';
   try {
     const data = await api('/api/auth/web-login/session', { method: 'POST', auth: false });
     state.webLoginToken = data.token;
     els.qrImage.src = data.qr_image;
     els.qrStatus.textContent = '请用微信扫码打开小程序确认登录';
+    els.sessionText.textContent = '等待微信扫码';
     startPolling();
   } catch (err) {
     els.qrStatus.textContent = err.message || '小程序码生成失败，请稍后重试';
@@ -141,17 +167,20 @@ async function checkWebLoginStatus() {
   }
   if (data.status === 'pending') {
     els.qrStatus.textContent = '等待微信扫码确认...';
+    els.sessionText.textContent = '等待微信扫码';
     return;
   }
   if (data.status === 'expired') {
     stopPolling();
     els.qrStatus.textContent = '小程序码已过期，请刷新';
+    els.sessionText.textContent = '登录码已过期';
     return;
   }
   if (data.status === 'confirmed') {
     stopPolling();
     applyWebAuth(data);
     await refreshAll(false);
+    els.sessionText.textContent = '已登录';
     toast('登录成功，已进入 PC 创作台');
   }
 }
@@ -180,6 +209,7 @@ function renderAuthState() {
   els.userName.textContent = loggedIn ? (state.user.nickname || `绘境用户 #${state.user.id}`) : '微信扫码登录';
   els.userPoints.textContent = loggedIn ? (state.user.points ?? 0) : '--';
   els.accountPoints.textContent = loggedIn ? (state.user.points ?? 0) : '--';
+  els.sessionText.textContent = loggedIn ? '已连接小程序账号' : '等待扫码登录';
   if (!loggedIn) {
     els.historyGrid.innerHTML = '<div class="task-box">微信扫码登录后，才能查看你的创作历史。</div>';
     els.pointsList.innerHTML = '<div class="points-row"><span>微信扫码登录后显示积分记录。</span></div>';
@@ -269,6 +299,7 @@ async function onSubmitCreate(event) {
     els.taskBox.classList.remove('hidden');
     els.taskBox.innerHTML = `任务 #${result.id} · 已冻结 ${result.points_cost} 积分`;
     els.promptInput.value = '';
+    updatePromptCount();
     if (state.mode === 'img2img') {
       els.imageInput.value = '';
       els.fileName.textContent = '选择一张图片作为再创作基础';
@@ -322,6 +353,7 @@ function renderHistory() {
     const imageUrl = resolveImageUrl(item.result_image_path);
     const statusClass = item.status === 'pending' ? 'pending' : (item.status === 'failed' ? 'failed' : '');
     const status = statusText(item.status);
+    const typeText = item.type === 'img2img' ? '图生图' : '文生图';
     return `
       <article class="history-card" data-id="${item.id}">
         <div class="thumb">
@@ -329,10 +361,11 @@ function renderHistory() {
         </div>
         <div class="history-meta">
           <span class="badge ${statusClass}">${status}</span>
-          <span>${item.type === 'img2img' ? '图生图' : '文生图'}</span>
+          <span>${typeText}</span>
           <span>${formatDateTime(item.created_at)}</span>
         </div>
         <h3>${escapeHtml(compactPrompt(item.prompt))}</h3>
+        ${item.error_message ? `<p class="history-error">${escapeHtml(compactPrompt(item.error_message))}</p>` : ''}
       </article>
     `;
   }).join('');
@@ -398,6 +431,15 @@ async function onCheckin() {
   } catch (err) {
     toast(err.message || '签到失败');
   }
+}
+
+function onLogout() {
+  stopPolling();
+  logoutWeb();
+  renderAuthState();
+  createWebLoginSession();
+  switchView('create');
+  toast('已退出登录');
 }
 
 async function onRedeemCdk(event) {

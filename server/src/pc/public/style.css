@@ -739,3 +739,282 @@ select:focus {
     flex-direction: column;
   }
 }
+
+/* UX polish: stronger hierarchy and clearer scan-to-login flow. */
+.hero {
+  position: relative;
+  padding: 30px;
+  border: 1px solid var(--line);
+  border-radius: 38px;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.46), rgba(255, 247, 235, 0.72)),
+    radial-gradient(circle at 85% 20%, rgba(216, 168, 79, 0.24), transparent 22rem);
+  box-shadow: 0 20px 70px rgba(84, 50, 30, 0.1);
+}
+
+.hero-copy {
+  max-width: 620px;
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+.hero-actions {
+  align-items: center;
+}
+
+.session-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.62);
+  white-space: nowrap;
+}
+
+.pulse-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--jade);
+  box-shadow: 0 0 0 0 rgba(47, 143, 131, 0.36);
+  animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(47, 143, 131, 0.36);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(47, 143, 131, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(47, 143, 131, 0);
+  }
+}
+
+.auth-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-card::before {
+  content: "";
+  position: absolute;
+  inset: 18px auto auto 48%;
+  width: 180px;
+  height: 180px;
+  border-radius: 60px;
+  background: linear-gradient(135deg, rgba(217, 102, 91, 0.16), rgba(216, 168, 79, 0.24));
+  transform: rotate(18deg);
+  pointer-events: none;
+}
+
+.auth-card > * {
+  position: relative;
+}
+
+.login-steps {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 22px 0 6px;
+}
+
+.login-steps span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--rose-deep);
+  background: rgba(255, 255, 255, 0.58);
+  font-size: 14px;
+}
+
+.qr-box {
+  position: relative;
+  isolation: isolate;
+}
+
+.qr-box::before {
+  content: "";
+  position: absolute;
+  inset: 16px;
+  z-index: -1;
+  border-radius: 24px;
+  background:
+    linear-gradient(90deg, var(--rose), var(--gold)) top / 100% 4px no-repeat,
+    linear-gradient(90deg, var(--gold), var(--jade)) bottom / 100% 4px no-repeat,
+    linear-gradient(var(--rose), var(--gold)) left / 4px 100% no-repeat,
+    linear-gradient(var(--gold), var(--jade)) right / 4px 100% no-repeat;
+  opacity: 0.38;
+}
+
+.qr-box img[src] + span {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.prompt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+#promptCount {
+  color: var(--muted);
+  font-size: 14px;
+  margin-right: auto;
+}
+
+#promptCount.strong {
+  color: var(--jade);
+  font-weight: 700;
+}
+
+.chip-btn {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 11px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.58);
+  font-size: 14px;
+}
+
+.chip-btn:hover {
+  color: var(--ink);
+  border-color: rgba(217, 102, 91, 0.38);
+  background: rgba(255, 248, 239, 0.94);
+}
+
+.quick-stats {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 30px;
+}
+
+.quick-stats div {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.quick-stats strong,
+.quick-stats span {
+  display: block;
+}
+
+.quick-stats strong {
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.quick-stats span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.locked {
+  position: relative;
+}
+
+.locked::after {
+  content: "微信扫码登录后解锁创作";
+  position: absolute;
+  inset: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 26px;
+  color: var(--rose-deep);
+  background: rgba(255, 248, 239, 0.72);
+  backdrop-filter: blur(6px);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.history-card {
+  cursor: pointer;
+}
+
+.history-card h3 {
+  min-height: 46px;
+}
+
+.history-error {
+  margin: -4px 0 0;
+  color: var(--rose-deep);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.detail-side .solid-btn,
+.detail-side .ghost-btn {
+  text-align: center;
+  text-decoration: none;
+}
+
+.nav-item {
+  transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.nav-item:hover {
+  transform: translateX(2px);
+}
+
+.submit-btn,
+.solid-btn,
+.ghost-btn,
+.load-more,
+.chip-btn {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.submit-btn:hover,
+.solid-btn:hover,
+.ghost-btn:hover,
+.load-more:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 960px) {
+  .hero {
+    padding: 22px;
+  }
+
+  .session-pill {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .quick-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .login-steps,
+  .prompt-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #promptCount {
+    margin-right: 0;
+  }
+
+  .qr-box img {
+    width: 188px;
+    height: 188px;
+  }
+}

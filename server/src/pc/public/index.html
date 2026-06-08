@@ -37,8 +37,13 @@
         <div>
           <p class="eyebrow">MENGQIAN IMAGE STUDIO</p>
           <h1>把一句话、一张图，延展成新的画面。</h1>
+          <p class="hero-copy">扫码即登录小程序账号，PC 端负责更舒展的创作，小程序端继续承接查看与使用。</p>
         </div>
         <div class="hero-actions">
+          <div class="session-pill">
+            <span class="pulse-dot"></span>
+            <span id="sessionText">等待扫码登录</span>
+          </div>
           <button id="refreshBtn" class="ghost-btn">刷新状态</button>
           <button id="historyBtn" class="solid-btn">查看历史</button>
         </div>
@@ -50,6 +55,11 @@
             <p class="eyebrow">WECHAT MINI PROGRAM</p>
             <h2>微信扫码登录 PC 创作台</h2>
             <p class="auth-copy">请使用微信扫描右侧小程序码。扫码后会打开“梦倩绘境”小程序并自动确认登录，PC 端会同步你的积分、历史和签到状态。</p>
+            <div class="login-steps">
+              <span>1. 微信扫码</span>
+              <span>2. 小程序确认</span>
+              <span>3. PC 自动解锁</span>
+            </div>
             <div class="auth-actions">
               <button id="newQrBtn" class="solid-btn" type="button">刷新小程序码</button>
             </div>
@@ -68,6 +78,12 @@
 
           <label class="field-label" for="promptInput">创作描述</label>
           <textarea id="promptInput" rows="7" placeholder="例如：月光下的东方庭院，薄雾、琉璃灯、电影感构图、细节丰富"></textarea>
+          <div class="prompt-toolbar">
+            <span id="promptCount">0 字</span>
+            <button type="button" class="chip-btn" data-prompt="东方庭院，月光穿过竹影，薄雾、琉璃灯、电影感构图、柔和色调、细节丰富">东方庭院</button>
+            <button type="button" class="chip-btn" data-prompt="赛博城市夜景，霓虹雨滴，玻璃反射，未来感人物剪影，高级商业海报质感">赛博夜景</button>
+            <button type="button" class="chip-btn" data-prompt="一只白猫坐在复古窗边，晨光、胶片质感、温暖色调、浅景深、治愈氛围">治愈宠物</button>
+          </div>
 
           <div id="uploadBox" class="upload-box hidden">
             <input id="imageInput" type="file" accept="image/*">
@@ -104,6 +120,11 @@
           <h2 id="taskTitle">等待你的第一条创作描述</h2>
           <span id="taskDesc">提交任务后无需停留在当前页面，历史列表会显示生成状态。</span>
           <div id="taskBox" class="task-box hidden"></div>
+          <div class="quick-stats">
+            <div><strong>1</strong><span>积分/次</span></div>
+            <div><strong>自动</strong><span>失败返还</span></div>
+            <div><strong>历史</strong><span>完成后查看</span></div>
+          </div>
         </aside>
       </section>
 
@@ -125,6 +146,7 @@
             <p class="eyebrow">ACCOUNT</p>
             <h2>我的账户</h2>
           </div>
+          <button id="logoutBtn" class="ghost-btn">退出登录</button>
         </div>
         <div class="account-grid">
           <div class="account-card">
