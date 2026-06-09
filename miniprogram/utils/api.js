@@ -90,11 +90,23 @@ function ensureLogin(force = false) {
     if (app.globalData.token) { resolve(); return; }
     wx.login({
       success(loginRes) {
-        request('/api/auth/login', { method: 'POST', data: { code: loginRes.code } })
+        const inviteCode = app.globalData.inviteCode || wx.getStorageSync('invite_code') || '';
+        request('/api/auth/login', {
+          method: 'POST',
+          data: {
+            code: loginRes.code,
+            invite_code: inviteCode,
+          },
+        })
           .then(data => {
             app.globalData.token = data.token;
             app.globalData.userInfo = data.user;
             wx.setStorageSync('token', data.token);
+            if (data.user?.invite_code || data.user?.id) {
+              wx.setStorageSync('my_invite_code', data.user.invite_code || data.user.id);
+            }
+            wx.removeStorageSync('invite_code');
+            app.globalData.inviteCode = '';
             resolve();
           })
           .catch(reject);

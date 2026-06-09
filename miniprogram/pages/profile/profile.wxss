@@ -100,6 +100,20 @@
   border-bottom: 1rpx solid #f0edff;
 }
 
+button.menu-item {
+  width: 100%;
+  margin: 0;
+  background: transparent;
+  border-radius: 0;
+  color: inherit;
+  line-height: 1.4;
+  text-align: left;
+}
+
+button.menu-item::after {
+  border: 0;
+}
+
 .menu-item:last-child { border-bottom: none; }
 
 .menu-icon {

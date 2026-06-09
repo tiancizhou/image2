@@ -1,4 +1,5 @@
 const { request, ensureLogin } = require('../../utils/api');
+const { withInvite, inviteQuery } = require('../../utils/invite');
 const app = getApp();
 const PAGE_SIZE = 10;
 
@@ -311,14 +312,14 @@ Page({
   onShareAppMessage() {
     return {
       title: '梦倩绘境：把灵感画成梦境',
-      path: '/pages/index/index',
+      path: withInvite('/pages/index/index'),
     };
   },
 
   onShareTimeline() {
     return {
       title: '梦倩绘境：把灵感画成梦境',
-      query: '',
+      query: inviteQuery(),
     };
   },
 });

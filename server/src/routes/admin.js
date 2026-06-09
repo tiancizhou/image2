@@ -113,7 +113,16 @@ router.get('/settings', adminAuth, async (req, res, next) => {
 
 router.put('/settings', adminAuth, async (req, res, next) => {
   try {
-    const allowed = ['default_model', 'points_per_generation', 'checkin_points', 'checkin_consecutive_bonus'];
+    const allowed = [
+      'default_model',
+      'points_per_generation',
+      'points_cost_1k',
+      'points_cost_2k',
+      'points_cost_4k',
+      'invite_reward_points',
+      'checkin_points',
+      'checkin_consecutive_bonus',
+    ];
     for (const [key, value] of Object.entries(req.body)) {
       if (allowed.includes(key)) {
         await settingsService.set(key, value);

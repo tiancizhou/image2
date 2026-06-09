@@ -36,6 +36,11 @@ function fmtDate(value) {
   return value ? new Date(value).toLocaleString() : '-';
 }
 
+function settingNumber(settings, key, fallback) {
+  const value = Number.parseInt(settings[key], 10);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
 function toast(msg, type = 'success') {
   const el = document.createElement('div');
   el.className = `toast toast-${type}`;
@@ -176,13 +181,17 @@ async function renderSettings(el) {
 
   const openCount = cachedChannels.filter((c) => c.circuit_status === 'open').length;
   const enabledCount = cachedChannels.filter((c) => c.enabled).length;
+  const cost1k = settingNumber(settings, 'points_cost_1k', settingNumber(settings, 'points_per_generation', 1));
+  const cost2k = settingNumber(settings, 'points_cost_2k', 2);
+  const cost4k = settingNumber(settings, 'points_cost_4k', 4);
+  const inviteReward = settingNumber(settings, 'invite_reward_points', 3);
 
   el.innerHTML = `
     ${pageHeader('渠道与系统', '配置多中转站、自动熔断参数和小程序积分策略。', '<button class="btn btn-primary" id="new-channel">新增渠道</button>')}
     <div class="metric-grid">
       <div class="metric-card"><span>可用渠道</span><strong>${enabledCount}</strong><small>按优先级自动切换</small></div>
       <div class="metric-card danger"><span>熔断中</span><strong>${openCount}</strong><small>冷却后自动恢复候选</small></div>
-      <div class="metric-card"><span>默认模型</span><strong>${escapeHtml(settings.default_model || 'gpt-image-2')}</strong><small>用于小程序生成</small></div>
+      <div class="metric-card"><span>尺寸计费</span><strong>${cost1k}/${cost2k}/${cost4k}</strong><small>1K / 2K / 4K 积分</small></div>
     </div>
     <div class="split-grid">
       <section class="card">
@@ -213,7 +222,10 @@ async function renderSettings(el) {
       </div>
       <div class="settings-grid">
         <label>默认模型<input id="s-default_model" value="${escapeHtml(settings.default_model || 'gpt-image-2')}"></label>
-        <label>每次生图消耗积分<input id="s-points_per_generation" type="number" min="0" value="${escapeHtml(settings.points_per_generation || 1)}"></label>
+        <label>1K 消耗积分<input id="s-points_cost_1k" type="number" min="0" value="${cost1k}"></label>
+        <label>2K 消耗积分<input id="s-points_cost_2k" type="number" min="0" value="${cost2k}"></label>
+        <label>4K 消耗积分<input id="s-points_cost_4k" type="number" min="0" value="${cost4k}"></label>
+        <label>邀请注册奖励积分<input id="s-invite_reward_points" type="number" min="0" value="${inviteReward}"></label>
         <label>每日签到积分<input id="s-checkin_points" type="number" min="0" value="${escapeHtml(settings.checkin_points || 1)}"></label>
         <label>连续签到奖励 JSON<input id="s-checkin_consecutive_bonus" value="${escapeHtml(settings.checkin_consecutive_bonus || '{}')}"></label>
       </div>
@@ -334,7 +346,10 @@ function bindSettingsEvents() {
         method: 'PUT',
         body: JSON.stringify({
           default_model: document.getElementById('s-default_model').value,
-          points_per_generation: document.getElementById('s-points_per_generation').value,
+          points_cost_1k: document.getElementById('s-points_cost_1k').value,
+          points_cost_2k: document.getElementById('s-points_cost_2k').value,
+          points_cost_4k: document.getElementById('s-points_cost_4k').value,
+          invite_reward_points: document.getElementById('s-invite_reward_points').value,
           checkin_points: document.getElementById('s-checkin_points').value,
           checkin_consecutive_bonus: bonus,
         }),

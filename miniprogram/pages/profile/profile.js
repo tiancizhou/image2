@@ -1,4 +1,6 @@
 const { request, ensureLogin } = require('../../utils/api');
+const { withInvite, inviteQuery } = require('../../utils/invite');
+const app = getApp();
 
 const PROFILE_CACHE_KEY = 'profile_summary_cache';
 const PROFILE_CACHE_TTL = 5000;
@@ -24,6 +26,8 @@ Page({
     communityBadgeText: '名片码',
     communityTitle: '联系梦倩绘境作者',
     communityDesc: '长按或保存下方微信名片码，添加作者微信后备注「梦倩绘境」，一起交流画面灵感与审美参考。',
+    inviteCode: '',
+    inviteRewardText: '好友通过你的链接首次注册成功后，你会获得邀请积分。',
   },
 
   onShow() {
@@ -78,10 +82,13 @@ Page({
   },
 
   applyProfile(profile, checkin = {}) {
+    app.globalData.userInfo = profile;
+    wx.setStorageSync('my_invite_code', profile.invite_code || profile.id);
     this.setData({
       userInfo: profile,
       displayName: `绘境用户 #${profile.id}`,
       userCode: `UID ${profile.id}`,
+      inviteCode: profile.invite_code || profile.id,
       points: profile.points || 0,
       checkedIn: !!checkin.checkedIn,
     });
@@ -125,6 +132,7 @@ Page({
       checkin: '签到',
       cdk: '兑换',
       refund: '返还',
+      invite: '邀请',
     };
     return map[type] || '积分';
   },
@@ -146,15 +154,15 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: '梦倩绘境：把灵感画成梦境',
-      path: '/pages/index/index',
+      title: '我在用梦倩绘境生成图片，送你一个创作入口',
+      path: withInvite('/pages/index/index'),
     };
   },
 
   onShareTimeline() {
     return {
       title: '梦倩绘境：把灵感画成梦境',
-      query: '',
+      query: inviteQuery(),
     };
   },
 });

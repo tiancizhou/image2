@@ -8,6 +8,13 @@ const state = {
   historyTotal: 0,
   historyList: [],
   loading: false,
+  pricing: {
+    '1024x1024': 1,
+    '1536x1024': 1,
+    '1024x1536': 1,
+    '2048x2048': 2,
+    '3840x2160': 4,
+  },
 };
 
 const els = {
@@ -33,6 +40,7 @@ const els = {
   promptInput: document.getElementById('promptInput'),
   promptCount: document.getElementById('promptCount'),
   sizeSelect: document.getElementById('sizeSelect'),
+  currentCost: document.getElementById('currentCost'),
   modelInput: document.getElementById('modelInput'),
   submitBtn: document.getElementById('submitBtn'),
   taskTitle: document.getElementById('taskTitle'),
@@ -57,6 +65,7 @@ init().catch(err => {
 
 async function init() {
   bindEvents();
+  await loadPricing();
   if (state.token) {
     try {
       await loadProfile();
@@ -76,6 +85,7 @@ function bindEvents() {
     els.fileName.textContent = els.imageInput.files[0]?.name || '选择一张图片作为再创作基础';
   });
   els.promptInput.addEventListener('input', updatePromptCount);
+  els.sizeSelect.addEventListener('change', updateSelectedCost);
   document.querySelectorAll('.chip-btn').forEach(btn => {
     btn.addEventListener('click', () => applyPromptTemplate(btn.dataset.prompt));
   });
@@ -91,6 +101,42 @@ function bindEvents() {
   document.querySelectorAll('[data-close="detail"]').forEach(el => {
     el.addEventListener('click', closeDetail);
   });
+}
+
+async function loadPricing() {
+  try {
+    const pricing = await api('/api/images/pricing', { auth: false });
+    Object.keys(pricing.sizes || {}).forEach((size) => {
+      state.pricing[size] = pricing.sizes[size].points_cost;
+    });
+    renderSizeOptions();
+    updateSelectedCost();
+  } catch (err) {
+    updateSelectedCost();
+  }
+}
+
+function renderSizeOptions() {
+  const labels = {
+    '1024x1024': '方图 1024x1024',
+    '1536x1024': '横图 1536x1024',
+    '1024x1536': '竖图 1024x1536',
+    '2048x2048': '高清方图 2048x2048',
+    '3840x2160': '宽屏 3840x2160',
+  };
+  const current = els.sizeSelect.value || '1024x1024';
+  els.sizeSelect.innerHTML = Object.keys(labels).map((size) => {
+    const selected = size === current ? ' selected' : '';
+    return `<option value="${size}"${selected}>${labels[size]} · ${getCostForSize(size)} 积分</option>`;
+  }).join('');
+}
+
+function getCostForSize(size) {
+  return state.pricing[size] !== undefined ? state.pricing[size] : 1;
+}
+
+function updateSelectedCost() {
+  if (els.currentCost) els.currentCost.textContent = getCostForSize(els.sizeSelect.value);
 }
 
 function switchView(view) {
@@ -413,6 +459,7 @@ async function remixFrom(item, imageUrl) {
   setMode('img2img');
   els.promptInput.value = item.prompt ? `${item.prompt}\n\n请在保留主体氛围的基础上，进一步优化细节与构图。` : '';
   els.sizeSelect.value = item.size || '1024x1024';
+  updateSelectedCost();
   els.taskTitle.textContent = '已带入上一张图的描述';
   els.taskDesc.textContent = 'PC 浏览器不能自动反填远程图片文件，请下载图片后重新选择参考图。';
   els.taskBox.classList.remove('hidden');
@@ -511,6 +558,7 @@ function pointType(type) {
     cdk: '兑换',
     checkin: '签到',
     refund: '返还',
+    invite: '邀请',
   };
   return map[type] || '积分';
 }

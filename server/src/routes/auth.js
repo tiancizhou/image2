@@ -3,16 +3,23 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const db = require('../db/pool');
 const config = require('../config');
+const invitations = require('../services/invitations');
 
 const router = express.Router();
 
 function publicUser(user) {
-  return { id: user.id, nickname: user.nickname, avatar_url: user.avatar_url, points: user.points };
+  return {
+    id: user.id,
+    nickname: user.nickname,
+    avatar_url: user.avatar_url,
+    points: user.points,
+    invite_code: invitations.publicInviteCode(user.id),
+  };
 }
 
 router.post('/login', async (req, res, next) => {
   try {
-    const { code } = req.body;
+    const { code, invite_code } = req.body;
     if (!code) return res.status(400).json({ error: '缺少 code' });
 
     const wxUrl = `https://api.weixin.qq.com/sns/jscode2session?appid=${config.wxAppId}&secret=${config.wxSecret}&js_code=${code}&grant_type=authorization_code`;
@@ -36,6 +43,10 @@ router.post('/login', async (req, res, next) => {
         [openid]
       );
       user = insertRes.rows[0];
+      const inviterId = await invitations.resolveInviterId(invite_code);
+      if (inviterId && inviterId !== user.id) {
+        await invitations.rewardInviter({ inviterId, invitedUserId: user.id });
+      }
     }
 
     const token = jwt.sign({ userId: user.id }, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
@@ -104,7 +115,7 @@ router.get('/web-login/status', async (req, res, next) => {
 
 router.post('/web-login/confirm', async (req, res, next) => {
   try {
-    const { token, code } = req.body;
+    const { token, code, invite_code } = req.body;
     if (!/^[a-f0-9]{32}$/.test(String(token || ''))) return res.status(400).json({ error: '无效登录会话' });
     if (!code) return res.status(400).json({ error: '缺少 code' });
 
@@ -115,7 +126,7 @@ router.post('/web-login/confirm', async (req, res, next) => {
     if (sessions.length === 0) return res.status(404).json({ error: '登录会话不存在' });
     if (new Date(sessions[0].expires_at).getTime() < Date.now()) return res.status(400).json({ error: '登录二维码已过期' });
 
-    const user = await getOrCreateWxUser(code);
+    const user = await getOrCreateWxUser(code, invite_code);
     await db.query(
       `UPDATE web_login_sessions
        SET status = 'confirmed', user_id = $1, confirmed_at = NOW()
@@ -130,7 +141,7 @@ router.post('/web-login/confirm', async (req, res, next) => {
   }
 });
 
-async function getOrCreateWxUser(code) {
+async function getOrCreateWxUser(code, inviteCode = '') {
   const wxUrl = `https://api.weixin.qq.com/sns/jscode2session?appid=${config.wxAppId}&secret=${config.wxSecret}&js_code=${code}&grant_type=authorization_code`;
   const wxRes = await fetch(wxUrl);
   const wxData = await wxRes.json();
@@ -152,7 +163,12 @@ async function getOrCreateWxUser(code) {
     'INSERT INTO users (openid) VALUES ($1) RETURNING *',
     [openid]
   );
-  return insertRes.rows[0];
+  const user = insertRes.rows[0];
+  const inviterId = await invitations.resolveInviterId(inviteCode);
+  if (inviterId && inviterId !== user.id) {
+    await invitations.rewardInviter({ inviterId, invitedUserId: user.id });
+  }
+  return user;
 }
 
 async function createMiniProgramCode(token) {

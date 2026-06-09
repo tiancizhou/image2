@@ -35,14 +35,20 @@ Page({
     wx.login({
       success: async (loginRes) => {
         try {
+          const inviteCode = app.globalData.inviteCode || wx.getStorageSync('invite_code') || '';
           const data = await request('/api/auth/web-login/confirm', {
             method: 'POST',
-            data: { token, code: loginRes.code },
+            data: { token, code: loginRes.code, invite_code: inviteCode },
             auth: false,
           });
           app.globalData.token = data.token;
           app.globalData.userInfo = data.user;
           wx.setStorageSync('token', data.token);
+          if (data.user?.invite_code || data.user?.id) {
+            wx.setStorageSync('my_invite_code', data.user.invite_code || data.user.id);
+          }
+          wx.removeStorageSync('invite_code');
+          app.globalData.inviteCode = '';
           this.setData({
             title: '网页端已登录',
             desc: 'PC 页面会自动进入创作台。你也可以返回小程序继续使用。',

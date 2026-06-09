@@ -1,4 +1,5 @@
 const { request, uploadFile, ensureLogin, clearLogin } = require('../../utils/api');
+const { withInvite, inviteQuery } = require('../../utils/invite');
 const app = getApp();
 
 Page({
@@ -28,6 +29,13 @@ Page({
     submittedTaskId: '',
     resultImage: '',
     pointsCost: 1,
+    sizePricing: {
+      '1024x1024': 1,
+      '1536x1024': 1,
+      '1024x1536': 1,
+      '2048x2048': 2,
+      '3840x2160': 4,
+    },
     userPoints: 0,
     serviceAvailable: false,
     serviceChecked: false,
@@ -67,11 +75,13 @@ Page({
 
   onLoad() {
     this.loadServiceAvailability();
+    this.loadPricing();
     this.loadUserPoints();
   },
 
   onShow() {
     this.loadServiceAvailability();
+    this.loadPricing();
     this.loadUserPoints();
     if (this.data.serviceAvailable) this.consumeRemixDraft();
   },
@@ -92,6 +102,8 @@ Page({
     try {
       await ensureLogin();
       const profile = await request('/api/user/profile');
+      app.globalData.userInfo = profile;
+      wx.setStorageSync('my_invite_code', profile.invite_code || profile.id);
       this.setData({ userPoints: profile.points });
     } catch (err) {
       if (err.message === '用户不存在') {
@@ -99,10 +111,32 @@ Page({
         try {
           await ensureLogin(true);
           const profile = await request('/api/user/profile');
+          app.globalData.userInfo = profile;
+          wx.setStorageSync('my_invite_code', profile.invite_code || profile.id);
           this.setData({ userPoints: profile.points });
         } catch {}
       }
     }
+  },
+
+  async loadPricing() {
+    try {
+      const pricing = await request('/api/images/pricing', { auth: false });
+      const sizePricing = {};
+      Object.keys(pricing.sizes || {}).forEach((size) => {
+        sizePricing[size] = pricing.sizes[size].points_cost;
+      });
+      this.setData({
+        sizePricing,
+        pointsCost: this.getCostForSize(this.data.size, sizePricing),
+      });
+    } catch (err) {
+      this.setData({ pointsCost: this.getCostForSize(this.data.size) });
+    }
+  },
+
+  getCostForSize(size, pricing = this.data.sizePricing) {
+    return pricing[size] !== undefined ? pricing[size] : 1;
   },
 
   onPromptInput(e) {
@@ -111,7 +145,11 @@ Page({
   },
 
   onSizeChange(e) {
-    this.setData({ size: e.detail.value || e.detail });
+    const size = e.detail.value || e.detail;
+    this.setData({
+      size,
+      pointsCost: this.getCostForSize(size),
+    });
   },
 
   syncModeState(extra = {}) {
@@ -162,6 +200,7 @@ Page({
       sourceFromHistory: true,
       uploadAreaClass: 'has-image',
       size: draft.size || this.data.size,
+      pointsCost: this.getCostForSize(draft.size || this.data.size),
       prompt,
       promptLength: prompt.length,
       resultImage: '',
@@ -337,14 +376,14 @@ Page({
   onShareAppMessage() {
     return {
       title: '梦倩绘境：把灵感画成梦境',
-      path: '/pages/index/index',
+      path: withInvite('/pages/index/index'),
     };
   },
 
   onShareTimeline() {
     return {
       title: '梦倩绘境：把灵感画成梦境',
-      query: '',
+      query: inviteQuery(),
     };
   },
 });

@@ -7,6 +7,7 @@ const db = require('../db/pool');
 const settings = require('../services/settings');
 const imageStorage = require('../services/image-storage');
 const generationWorker = require('../services/generation-worker');
+const generationPricing = require('../services/generation-pricing');
 
 const upload = multer({ dest: 'uploads/tmp/' });
 const router = express.Router();
@@ -82,6 +83,14 @@ router.get('/availability', async (req, res, next) => {
   }
 });
 
+router.get('/pricing', async (req, res, next) => {
+  try {
+    res.json(await generationPricing.getPricingTable());
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/generate', auth, async (req, res, next) => {
   try {
     if (!await hasEnabledChannels()) return res.status(503).json({ error: '创作服务暂未开放' });
@@ -91,7 +100,7 @@ router.post('/generate', auth, async (req, res, next) => {
 
     const useModel = model || await settings.get('default_model') || 'gpt-image-2';
     const useSize = size || '1024x1024';
-    const cost = parseInt(await settings.get('points_per_generation')) || 1;
+    const cost = await generationPricing.getCostForSize(useSize);
 
     const gen = await createGenerationAndReservePoints({
       userId: req.userId,
@@ -120,7 +129,7 @@ router.post('/edit', auth, upload.single('image'), async (req, res, next) => {
 
     const useModel = model || await settings.get('default_model') || 'gpt-image-2';
     const useSize = size || '1024x1024';
-    const cost = parseInt(await settings.get('points_per_generation')) || 1;
+    const cost = await generationPricing.getCostForSize(useSize);
 
     if (source_generation_id) {
       const { rows } = await db.query(

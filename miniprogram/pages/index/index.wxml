@@ -85,7 +85,7 @@
       <text>输出尺寸</text>
       <text class="hint">消耗 {{pointsCost}} 积分</text>
     </view>
-    <size-picker value="{{size}}" bind:change="onSizeChange" />
+    <size-picker value="{{size}}" pricing="{{sizePricing}}" bind:change="onSizeChange" />
 
     <view class="info-bar">
       <text class="points-info">本次 {{actionVerb}}预计消耗 {{pointsCost}} 积分</text>

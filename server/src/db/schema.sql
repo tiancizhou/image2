@@ -17,6 +17,9 @@ CREATE TABLE IF NOT EXISTS users (
   last_login_at TIMESTAMP DEFAULT NOW()
 );
 
+ALTER TABLE users ADD COLUMN IF NOT EXISTS invited_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS invited_at TIMESTAMP;
+
 CREATE TABLE IF NOT EXISTS pc_accounts (
   id SERIAL PRIMARY KEY,
   username VARCHAR UNIQUE NOT NULL,
@@ -127,6 +130,10 @@ CREATE TABLE IF NOT EXISTS settings (
 INSERT INTO settings (key, value) VALUES
   ('default_model', 'gpt-image-2'),
   ('points_per_generation', '1'),
+  ('points_cost_1k', '1'),
+  ('points_cost_2k', '2'),
+  ('points_cost_4k', '4'),
+  ('invite_reward_points', '3'),
   ('checkin_points', '1'),
   ('checkin_consecutive_bonus', '{"7": 5, "30": 20}')
 ON CONFLICT (key) DO NOTHING;

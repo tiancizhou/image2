@@ -41,6 +41,16 @@
       </view>
       <text class="menu-text">积分记录</text>
     </view>
+    <button class="menu-item share-invite" wx:if="{{serviceAvailable}}" open-type="share">
+      <view class="menu-icon" style="background:linear-gradient(135deg,#ffd166,#ef476f);">
+        <text style="font-size:36rpx;">邀</text>
+      </view>
+      <view class="menu-main">
+        <text class="menu-text">邀请好友赚积分</text>
+        <text class="menu-sub">{{inviteRewardText}}</text>
+      </view>
+      <text class="menu-badge community">分享</text>
+    </button>
     <view class="menu-item" bindtap="openCommunity">
       <view class="menu-icon" style="background:linear-gradient(135deg,#233026,#70a342);">
         <text style="font-size:36rpx;">👥</text>

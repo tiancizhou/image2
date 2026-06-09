@@ -1,6 +1,7 @@
 Component({
   properties: {
     value: { type: String, value: '1024x1024' },
+    pricing: { type: Object, value: {} },
   },
 
   data: {
@@ -24,12 +25,17 @@ Component({
     value(value) {
       this.syncDisplaySizes(value);
     },
+    pricing() {
+      this.syncDisplaySizes(this.properties.value);
+    },
   },
 
   methods: {
     syncDisplaySizes(value) {
+      const pricing = this.properties.pricing || {};
       const displaySizes = this.data.sizes.map(item => ({
         ...item,
+        costText: pricing[item.value] !== undefined ? `${pricing[item.value]} 积分` : '',
         activeClass: item.value === value ? 'size-active' : '',
       }));
       this.setData({ displaySizes });

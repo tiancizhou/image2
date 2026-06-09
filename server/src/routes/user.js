@@ -4,6 +4,7 @@ const db = require('../db/pool');
 const pointsService = require('../services/points');
 const cdkService = require('../services/cdk');
 const checkinService = require('../services/checkin');
+const invitations = require('../services/invitations');
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.get('/profile', auth, async (req, res, next) => {
       [req.userId]
     );
     if (rows.length === 0) return res.status(404).json({ error: '用户不存在' });
-    res.json(rows[0]);
+    res.json({ ...rows[0], invite_code: invitations.publicInviteCode(rows[0].id) });
   } catch (err) {
     next(err);
   }
@@ -29,7 +30,10 @@ router.get('/profile/summary', auth, async (req, res, next) => {
     if (rows.length === 0) return res.status(404).json({ error: '用户不存在' });
 
     const checkin = await checkinService.getStatus(req.userId);
-    res.json({ profile: rows[0], checkin });
+    res.json({
+      profile: { ...rows[0], invite_code: invitations.publicInviteCode(rows[0].id) },
+      checkin,
+    });
   } catch (err) {
     next(err);
   }

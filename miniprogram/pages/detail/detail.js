@@ -1,4 +1,5 @@
 const { request, ensureLogin } = require('../../utils/api');
+const { withInvite, inviteQuery } = require('../../utils/invite');
 const app = getApp();
 
 function resolveImageUrl(path) {
@@ -133,13 +134,13 @@ Page({
     if (item && item.status === 'success') {
       return {
         title: '我用梦倩绘境生成了一张图',
-        path: `/pages/detail/detail?id=${item.id}&share=1`,
+        path: withInvite(`/pages/detail/detail?id=${item.id}&share=1`),
         imageUrl: item.share_image_url || item.image_url || '',
       };
     }
     return {
       title: '梦倩绘境：把灵感画成梦境',
-      path: '/pages/index/index',
+      path: withInvite('/pages/index/index'),
     };
   },
 
@@ -147,7 +148,7 @@ Page({
     const { item } = this.data;
     return {
       title: item && item.status === 'success' ? '我用梦倩绘境生成了一张图' : '梦倩绘境：把灵感画成梦境',
-      query: item && item.status === 'success' ? `id=${item.id}&share=1` : '',
+      query: inviteQuery(item && item.status === 'success' ? `id=${item.id}&share=1` : ''),
       imageUrl: item?.share_image_url || item?.image_url || '',
     };
   },

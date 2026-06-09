@@ -11,5 +11,6 @@
     </view>
     <text class="size-label">{{item.label}}</text>
     <text class="size-desc">{{item.desc}}</text>
+    <text class="size-desc" wx:if="{{item.costText}}">{{item.costText}}</text>
   </view>
 </view>
