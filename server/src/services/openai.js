@@ -17,7 +17,9 @@ function retryDelayMs(attempt) {
 }
 
 async function requestChannel(channel, endpoint, body, isMultipart = false) {
-  const url = `${channel.base_url.replace(/\/+$/, '')}${endpoint}`;
+  const rawPrefix = channel.api_prefix === null || channel.api_prefix === undefined ? '/v1' : channel.api_prefix;
+  const apiPrefix = rawPrefix ? `/${String(rawPrefix).replace(/^\/+|\/+$/g, '')}` : '';
+  const url = `${channel.base_url.replace(/\/+$/, '')}${apiPrefix}${endpoint}`;
   const headers = { Authorization: `Bearer ${channel.api_key}` };
   if (!isMultipart) headers['Content-Type'] = 'application/json';
 
@@ -102,7 +104,7 @@ async function withFailover(handler) {
 async function generateImage({ prompt, model, size, n }) {
   return withFailover(async (channel) => requestChannel(
     channel,
-    '/v1/images/generations',
+    '/images/generations',
     { model, prompt, n: n || 1, size },
     false
   ));
@@ -116,7 +118,7 @@ async function editImage({ prompt, model, size, n, imageBuffer, filename }) {
   formData.append('n', String(n || 1));
   formData.append('image', new Blob([imageBuffer]), filename);
 
-  return withFailover(async (channel) => requestChannel(channel, '/v1/images/edits', formData, true));
+  return withFailover(async (channel) => requestChannel(channel, '/images/edits', formData, true));
 }
 
 module.exports = { generateImage, editImage };

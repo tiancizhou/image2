@@ -240,7 +240,7 @@ function renderChannelCards(channels) {
           </div>
           <span class="pill">${statusText}</span>
         </div>
-        <div class="channel-url">${escapeHtml(c.base_url)}</div>
+        <div class="channel-url">${escapeHtml(c.base_url)}${escapeHtml(c.api_prefix ?? '/v1')}</div>
         <dl>
           <div><dt>优先级</dt><dd>${c.priority}</dd></div>
           <div><dt>失败</dt><dd>${c.consecutive_failures}/${c.failure_threshold}</dd></div>
@@ -264,6 +264,7 @@ function renderChannelForm(channel = {}) {
       <input type="hidden" id="channel-id" value="${channel.id || ''}">
       <label>渠道名称<input id="channel-name" value="${escapeHtml(channel.name || '')}" placeholder="例如：主力 OpenAI 中转"></label>
       <label>Base URL<input id="channel-base-url" value="${escapeHtml(channel.base_url || '')}" placeholder="https://relay.example.com"></label>
+      <label>API 前缀<input id="channel-api-prefix" value="${escapeHtml(channel.api_prefix ?? '/v1')}" placeholder="/v1；不需要则留空"></label>
       <label>API Key<input id="channel-api-key" type="password" value="" placeholder="${channel.id ? '留空则保留当前 key' : 'sk-...'}"></label>
       <div class="settings-grid compact">
         <label>优先级<input id="channel-priority" type="number" value="${channel.priority ?? 100}"></label>
@@ -362,6 +363,7 @@ function bindChannelForm() {
     const payload = {
       name: document.getElementById('channel-name').value,
       base_url: document.getElementById('channel-base-url').value,
+      api_prefix: document.getElementById('channel-api-prefix').value,
       api_key: document.getElementById('channel-api-key').value,
       enabled: document.getElementById('channel-enabled').checked,
       priority: intValue('channel-priority', 100),

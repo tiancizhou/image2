@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS api_channels (
   id SERIAL PRIMARY KEY,
   name VARCHAR NOT NULL,
   base_url TEXT NOT NULL,
+  api_prefix TEXT DEFAULT '/v1',
   api_key TEXT NOT NULL,
   enabled BOOLEAN DEFAULT TRUE,
   priority INTEGER DEFAULT 100,
@@ -55,6 +56,8 @@ CREATE TABLE IF NOT EXISTS api_channels (
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+ALTER TABLE api_channels ADD COLUMN IF NOT EXISTS api_prefix TEXT DEFAULT '/v1';
 
 CREATE TABLE IF NOT EXISTS generations (
   id SERIAL PRIMARY KEY,

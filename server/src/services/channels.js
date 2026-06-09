@@ -10,6 +10,7 @@ function normalizeChannel(input) {
   return {
     name: String(input.name || '').trim(),
     base_url: String(input.base_url || '').trim().replace(/\/+$/, ''),
+    api_prefix: normalizeApiPrefix(input.api_prefix),
     api_key: String(input.api_key || '').trim(),
     enabled: input.enabled !== false,
     priority: Number.parseInt(input.priority, 10) || 100,
@@ -17,6 +18,13 @@ function normalizeChannel(input) {
     failure_threshold: Number.parseInt(input.failure_threshold, 10) || 2,
     cooldown_seconds: Number.parseInt(input.cooldown_seconds, 10) || 300,
   };
+}
+
+function normalizeApiPrefix(value) {
+  if (value === undefined || value === null) return '/v1';
+  const trimmed = String(value).trim();
+  if (!trimmed) return '';
+  return `/${trimmed.replace(/^\/+|\/+$/g, '')}`;
 }
 
 function assertValid(channel) {
@@ -40,7 +48,7 @@ function failureWeight(error) {
 
 async function list() {
   const { rows } = await db.query(
-    `SELECT id, name, base_url, enabled, priority, timeout_ms, failure_threshold, cooldown_seconds,
+    `SELECT id, name, base_url, api_prefix, enabled, priority, timeout_ms, failure_threshold, cooldown_seconds,
       consecutive_failures, circuit_status, circuit_open_until, last_error, last_success_at,
       last_failure_at, created_at, updated_at
      FROM api_channels
@@ -54,12 +62,13 @@ async function create(input) {
   assertValid(channel);
   const { rows: [row] } = await db.query(
     `INSERT INTO api_channels
-      (name, base_url, api_key, enabled, priority, timeout_ms, failure_threshold, cooldown_seconds)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      (name, base_url, api_prefix, api_key, enabled, priority, timeout_ms, failure_threshold, cooldown_seconds)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING id`,
     [
       channel.name,
       channel.base_url,
+      channel.api_prefix,
       channel.api_key,
       channel.enabled,
       channel.priority,
@@ -84,17 +93,19 @@ async function update(id, input) {
     `UPDATE api_channels SET
       name = $1,
       base_url = $2,
-      api_key = $3,
-      enabled = $4,
-      priority = $5,
-      timeout_ms = $6,
-      failure_threshold = $7,
-      cooldown_seconds = $8,
+      api_prefix = $3,
+      api_key = $4,
+      enabled = $5,
+      priority = $6,
+      timeout_ms = $7,
+      failure_threshold = $8,
+      cooldown_seconds = $9,
       updated_at = NOW()
-     WHERE id = $9`,
+     WHERE id = $10`,
     [
       channel.name,
       channel.base_url,
+      channel.api_prefix,
       channel.api_key,
       channel.enabled,
       channel.priority,
