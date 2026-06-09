@@ -2,9 +2,9 @@
   <view class="hero-card">
     <view class="hero-glow"></view>
     <text class="kicker">梦倩绘境</text>
-    <text class="hero-title">让灵感入梦，让画面成真</text>
-    <text class="hero-subtitle">收藏画面灵感，整理属于你的梦中画境。</text>
-    <view class="balance-row">
+    <text class="hero-title">梦境画面灵感手册</text>
+    <text class="hero-subtitle">收集配色、构图与画面氛围，整理属于你的梦中画境。</text>
+    <view class="balance-row" wx:if="{{serviceAvailable}}">
       <text>当前积分</text>
       <text>{{userPoints}}</text>
     </view>
@@ -13,19 +13,24 @@
   <view wx:if="{{!serviceAvailable}}" class="gallery-card">
     <view class="gallery-badge">灵感画廊</view>
     <text class="gallery-title">把画面留给想象</text>
-    <text class="gallery-desc">这里会展示精选画作、创作灵感与构图参考。当前创作服务暂未开放，你可以先浏览灵感，稍后再回来体验完整功能。</text>
+    <text class="gallery-desc">这里整理了适合梦境画面的配色、构图与氛围参考。你可以按主题浏览，也可以联系作者交流更多画面灵感。</text>
     <view class="gallery-list">
-      <view class="gallery-item">
-        <text class="gallery-item-title">梦境配色</text>
-        <text class="gallery-item-desc">柔和光影、清透天空、温暖留白。</text>
-      </view>
-      <view class="gallery-item">
-        <text class="gallery-item-title">构图参考</text>
-        <text class="gallery-item-desc">主体明确，背景干净，画面更耐看。</text>
-      </view>
-      <view class="gallery-item">
-        <text class="gallery-item-title">联系作者</text>
-        <text class="gallery-item-desc">可在“我的”页面加入交流群，获取更多灵感。</text>
+      <view
+        wx:for="{{galleryItems}}"
+        wx:key="id"
+        class="gallery-item"
+        data-id="{{item.id}}"
+        bindtap="onGalleryItemTap"
+      >
+        <image
+          class="gallery-image"
+          src="{{item.image}}"
+          mode="aspectFill"
+          data-id="{{item.id}}"
+          bindtap="onGalleryImageTap"
+        />
+        <text class="gallery-item-title">{{item.title}}</text>
+        <text class="gallery-item-desc">{{item.desc}}</text>
       </view>
     </view>
   </view>
@@ -127,6 +132,15 @@
         <view class="task-btn secondary" bindtap="onCloseTaskModal">继续创作</view>
         <view class="task-btn primary" bindtap="onGoHistory">去历史查看</view>
       </view>
+    </view>
+  </view>
+
+  <view class="preview-mask" wx:if="{{previewVisible}}" catchtap="closeGalleryPreview">
+    <view class="preview-panel" catchtap="noop">
+      <image class="preview-panel-image" src="{{previewItem.image}}" mode="aspectFit" />
+      <text class="preview-panel-title">{{previewItem.title}}</text>
+      <text class="preview-panel-desc">{{previewItem.desc}}</text>
+      <button class="preview-close" bindtap="closeGalleryPreview">关闭</button>
     </view>
   </view>
 </view>

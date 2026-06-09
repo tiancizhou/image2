@@ -69,6 +69,30 @@
   font-weight: 800;
 }
 
+.about-panel {
+  padding: 26rpx;
+  border-radius: 28rpx;
+  background: #fff8ed;
+}
+
+.about-title,
+.about-desc {
+  display: block;
+}
+
+.about-title {
+  color: #30291b;
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.about-desc {
+  margin-top: 12rpx;
+  color: #7a6a50;
+  font-size: 25rpx;
+  line-height: 1.65;
+}
+
 .menu-item {
   display: flex;
   align-items: center;

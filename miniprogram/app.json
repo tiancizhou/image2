@@ -6,8 +6,7 @@
     "pages/web-login/web-login",
     "pages/profile/profile",
     "pages/checkin/checkin",
-    "pages/cdk/cdk",
-    "pages/edit/edit"
+    "pages/cdk/cdk"
   ],
   "lazyCodeLoading": "requiredComponents",
   "window": {
@@ -24,13 +23,13 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "创作",
+        "text": "画廊",
         "iconPath": "static/tab-create.png",
         "selectedIconPath": "static/tab-create-active.png"
       },
       {
         "pagePath": "pages/history/history",
-        "text": "历史",
+        "text": "收藏",
         "iconPath": "static/tab-history.png",
         "selectedIconPath": "static/tab-history-active.png"
       },

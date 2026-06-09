@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="650" viewBox="0 0 900 650">
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#171d31"/>
+      <stop offset="0.56" stop-color="#26304c"/>
+      <stop offset="1" stop-color="#3d1832"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f3755"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="650" rx="44" fill="url(#night)"/>
+  <rect x="90" y="96" width="160" height="320" rx="18" fill="#1c243a"/>
+  <rect x="645" y="76" width="190" height="362" rx="22" fill="#202844"/>
+  <rect x="128" y="136" width="58" height="40" rx="8" fill="#ff8bbd" opacity="0.9"/>
+  <rect x="128" y="210" width="76" height="34" rx="8" fill="#7be3ff" opacity="0.82"/>
+  <rect x="690" y="128" width="82" height="44" rx="8" fill="#ffd166" opacity="0.86"/>
+  <rect x="702" y="232" width="98" height="36" rx="8" fill="#ff6f91" opacity="0.92"/>
+  <rect x="0" y="422" width="900" height="228" fill="url(#road)"/>
+  <path d="M430 420 330 650M520 420 640 650" stroke="#fff" stroke-width="7" opacity="0.2"/>
+  <ellipse cx="450" cy="538" rx="250" ry="54" fill="#ff6f91" opacity="0.18"/>
+  <ellipse cx="510" cy="576" rx="280" ry="44" fill="#7be3ff" opacity="0.14"/>
+  <path d="M310 78v350M382 112v315M518 70v380M604 118v330M806 96v382" stroke="#e9f7ff" stroke-width="5" stroke-linecap="round" opacity="0.25"/>
+  <circle cx="455" cy="316" r="66" fill="#fff2c4" opacity="0.92"/>
+  <path d="M396 342c42 60 122 60 164 0" fill="none" stroke="#ff8bbd" stroke-width="18" stroke-linecap="round" opacity="0.72"/>
+</svg>

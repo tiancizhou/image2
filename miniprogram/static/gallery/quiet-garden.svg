@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="650" viewBox="0 0 900 650">
+  <defs>
+    <linearGradient id="garden" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5fbec"/>
+      <stop offset="0.58" stop-color="#dbeec9"/>
+      <stop offset="1" stop-color="#fff2dd"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="650" rx="44" fill="url(#garden)"/>
+  <circle cx="190" cy="176" r="118" fill="#ffffff" opacity="0.42"/>
+  <circle cx="750" cy="118" r="96" fill="#fff7d6" opacity="0.62"/>
+  <path d="M120 570c98-130 215-174 352-128 112 38 208 12 290-82" fill="none" stroke="#7da866" stroke-width="34" stroke-linecap="round" opacity="0.36"/>
+  <path d="M150 610c96-92 190-118 282-78 120 52 230 26 330-70" fill="none" stroke="#9dc27a" stroke-width="28" stroke-linecap="round" opacity="0.44"/>
+  <path d="M226 500c30-92 78-156 144-192" fill="none" stroke="#6e8f56" stroke-width="12" stroke-linecap="round" opacity="0.55"/>
+  <path d="M372 466c-52-36-54-82-6-138 55 36 57 83 6 138z" fill="#86aa69" opacity="0.72"/>
+  <path d="M488 446c-40-52-28-96 35-132 39 54 27 98-35 132z" fill="#b6cf88" opacity="0.8"/>
+  <circle cx="326" cy="292" r="30" fill="#f3b7a1" opacity="0.9"/>
+  <circle cx="552" cy="292" r="34" fill="#fff0a8" opacity="0.92"/>
+  <circle cx="612" cy="382" r="26" fill="#f0a7b7" opacity="0.86"/>
+  <ellipse cx="448" cy="502" rx="158" ry="38" fill="#50623d" opacity="0.12"/>
+</svg>

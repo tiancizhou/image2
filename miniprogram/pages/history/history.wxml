@@ -1,19 +1,33 @@
 <view class="page">
   <view class="gallery-history" wx:if="{{!serviceAvailable}}">
     <view class="gallery-mark">梦</view>
-    <text class="gallery-title">灵感收藏暂未开放</text>
-    <text class="gallery-desc">这里将用于整理你喜欢的画面、配色与构图参考。当前先展示为灵感空间，后续服务开放后会同步你的创作记录。</text>
-    <view class="idea-row">
-      <text>柔光天空</text>
-      <text>清透色彩</text>
-      <text>梦境构图</text>
+    <text class="gallery-title">灵感收藏</text>
+    <text class="gallery-desc">这里整理适合收藏的画面关键词、配色方向与构图提示。你可以从下方主题开始浏览，逐步建立自己的画面参考库。</text>
+    <view class="collection-list">
+      <view
+        wx:for="{{inspirationCollections}}"
+        wx:key="id"
+        class="collection-item"
+        data-id="{{item.id}}"
+        bindtap="onIdeaTap"
+      >
+        <image
+          class="collection-image"
+          src="{{item.image}}"
+          mode="aspectFill"
+          data-id="{{item.id}}"
+          bindtap="onCollectionImageTap"
+        />
+        <text class="collection-title">{{item.title}}</text>
+        <text class="collection-desc">{{item.desc}}</text>
+      </view>
     </view>
   </view>
 
-  <view class="polling-tip" wx:if="{{serviceAvailable && polling}}">
+  <view class="polling-tip" wx:if="{{showPollingTip}}">
     <text>有任务生成中，正在自动刷新...</text>
   </view>
-  <view class="history-grid" wx:if="{{serviceAvailable && list.length > 0}}">
+  <view class="history-grid" wx:if="{{showHistoryGrid}}">
     <view
       wx:for="{{list}}"
       wx:key="id"
@@ -23,7 +37,7 @@
     >
       <view class="history-thumb placeholder {{item.status_class}}" wx:if="{{!item.image_url}}">
         <text>{{item.status_text}}</text>
-        <text wx:if="{{item.status === 'failed'}}" class="error-text">{{item.error_message}}</text>
+        <text wx:if="{{item.is_failed}}" class="error-text">{{item.error_message}}</text>
       </view>
       <image
         wx:else
@@ -35,7 +49,7 @@
       <view class="history-meta">
         <view class="meta-top">
           <text class="status-badge {{item.status_class}}">{{item.status_text}}</text>
-          <text class="history-type">{{item.type === 'img2img' ? '图生图' : '文生图'}}</text>
+          <text class="history-type">{{item.type_text}}</text>
         </view>
         <text class="history-prompt">{{item.prompt}}</text>
         <text class="history-info">{{item.size}} · {{item.created_at_text}}</text>
@@ -43,12 +57,21 @@
     </view>
   </view>
 
-  <view class="empty-state" wx:if="{{serviceAvailable && !loading && list.length === 0}}">
+  <view class="empty-state" wx:if="{{showEmptyState}}">
     <text style="font-size:48rpx;">🎨</text>
     <text>还没有生成记录哦~</text>
   </view>
 
-  <view class="load-more" wx:if="{{serviceAvailable && hasMore}}">
+  <view class="load-more" wx:if="{{showLoadMore}}">
     <text class="load-more-text" bindtap="loadMore">加载更多</text>
+  </view>
+
+  <view class="preview-mask" wx:if="{{previewVisible}}" catchtap="closeCollectionPreview">
+    <view class="preview-panel" catchtap="noop">
+      <image class="preview-panel-image" src="{{previewItem.image}}" mode="aspectFit" />
+      <text class="preview-panel-title">{{previewItem.title}}</text>
+      <text class="preview-panel-desc">{{previewItem.desc}}</text>
+      <button class="preview-close" bindtap="closeCollectionPreview">关闭</button>
+    </view>
   </view>
 </view>

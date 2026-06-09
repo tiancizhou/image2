@@ -33,6 +33,35 @@ Page({
     baseUrl: '',
     polling: false,
     serviceAvailable: false,
+    showPollingTip: false,
+    showHistoryGrid: false,
+    showEmptyState: false,
+    showLoadMore: false,
+    previewVisible: false,
+    previewItem: null,
+    inspirationCollections: [
+      {
+        id: 'soft-sky',
+        title: '柔光天空',
+        image: '/static/gallery/floating-cloud.svg',
+        desc: '适合搭配白色主体、轻盈云层和低对比阴影。',
+        note: '收藏理由：天空面积越大，画面越有呼吸感。建议使用浅蓝、米白和少量金色高光。',
+      },
+      {
+        id: 'clear-color',
+        title: '清透色彩',
+        image: '/static/gallery/morning-window.svg',
+        desc: '降低饱和度，让主体和背景之间保持舒服的距离。',
+        note: '收藏理由：清透色彩更适合治愈、梦境、自然主题。避免大面积高饱和紫色或红色。',
+      },
+      {
+        id: 'dream-layout',
+        title: '梦境构图',
+        image: '/static/gallery/quiet-garden.svg',
+        desc: '主体居中或偏下，背景留白，画面更像一段故事。',
+        note: '收藏理由：留白能让视线停留更久。可以用前景虚化、远景光斑增强层次。',
+      },
+    ],
   },
 
   onLoad() {
@@ -50,12 +79,29 @@ Page({
       this.setData({ serviceAvailable });
       if (!serviceAvailable) {
         this.stopPolling();
-        this.setData({ list: [], page: 1, hasMore: false, loading: false });
+        this.setData({
+          list: [],
+          page: 1,
+          hasMore: false,
+          loading: false,
+          showHistoryGrid: false,
+          showEmptyState: false,
+          showLoadMore: false,
+        });
         return;
       }
       this.loadHistoryOnShow();
     } catch {
-      this.setData({ serviceAvailable: false, list: [], page: 1, hasMore: false, loading: false });
+      this.setData({
+        serviceAvailable: false,
+        list: [],
+        page: 1,
+        hasMore: false,
+        loading: false,
+        showHistoryGrid: false,
+        showEmptyState: false,
+        showLoadMore: false,
+      });
       this.stopPolling();
     }
   },
@@ -89,6 +135,8 @@ Page({
         image_url: resolveImageUrl(item.result_image_path),
         status_text: statusText(item.status),
         status_class: item.status === 'failed' ? 'failed' : (item.status === 'pending' ? 'pending' : 'success'),
+        is_failed: item.status === 'failed',
+        type_text: item.type === 'img2img' ? '图生图' : '文生图',
         created_at_text: formatDateTime(item.created_at),
       }));
       const newList = this.data.list.concat(normalized);
@@ -97,6 +145,7 @@ Page({
         hasMore: newList.length < res.total,
         loading: false,
       });
+      this.updateViewFlags();
       this.updatePolling();
     } catch {
       this.setData({ loading: false });
@@ -114,6 +163,8 @@ Page({
         image_url: resolveImageUrl(item.result_image_path),
         status_text: statusText(item.status),
         status_class: item.status === 'failed' ? 'failed' : (item.status === 'pending' ? 'pending' : 'success'),
+        is_failed: item.status === 'failed',
+        type_text: item.type === 'img2img' ? '图生图' : '文生图',
         created_at_text: formatDateTime(item.created_at),
       }));
       this.patchFirstPage(normalized, res.total);
@@ -132,6 +183,7 @@ Page({
         hasMore: nextList.length < total,
         loading: false,
       });
+      this.updateViewFlags(nextList, nextList.length < total, false);
       return;
     }
 
@@ -152,6 +204,16 @@ Page({
       });
     });
     this.setData(changed ? patch : { loading: false });
+    this.updateViewFlags(nextList, nextList.length < total, false);
+  },
+
+  updateViewFlags(list = this.data.list, hasMore = this.data.hasMore, loading = this.data.loading) {
+    this.setData({
+      showHistoryGrid: this.data.serviceAvailable && list.length > 0,
+      showEmptyState: this.data.serviceAvailable && !loading && list.length === 0,
+      showLoadMore: this.data.serviceAvailable && hasMore,
+      showPollingTip: this.data.serviceAvailable && this.data.polling,
+    });
   },
 
   updatePolling() {
@@ -162,7 +224,7 @@ Page({
 
   startPolling() {
     if (this.pollTimer) return;
-    this.setData({ polling: true });
+    this.setData({ polling: true, showPollingTip: this.data.serviceAvailable });
     this.pollTimer = setInterval(() => {
       this.refreshFirstPage();
     }, 5000);
@@ -173,13 +235,64 @@ Page({
       clearInterval(this.pollTimer);
       this.pollTimer = null;
     }
-    if (this.data.polling) this.setData({ polling: false });
+    if (this.data.polling) this.setData({ polling: false, showPollingTip: false });
   },
 
   loadMore() {
     if (!this.data.serviceAvailable) return;
     this.setData({ page: this.data.page + 1 });
     this.loadList();
+  },
+
+  onIdeaTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const item = this.data.inspirationCollections.find(option => option.id === id);
+    if (!item) return;
+    wx.showModal({
+      title: item.title,
+      content: item.note,
+      cancelText: '关闭',
+      confirmText: '查看图片',
+      success: (res) => {
+        if (!res.confirm) return;
+        this.openCollectionPreview(item);
+      },
+    });
+  },
+
+  onCollectionImageTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const item = this.data.inspirationCollections.find(option => option.id === id);
+    if (!item) return;
+    this.openCollectionPreview(item);
+  },
+
+  openCollectionPreview(item) {
+    this.setData({
+      previewVisible: true,
+      previewItem: item,
+    });
+  },
+
+  closeCollectionPreview() {
+    this.setData({
+      previewVisible: false,
+      previewItem: null,
+    });
+  },
+
+  noop() {},
+
+  showCollectionNote(e) {
+    const id = e.currentTarget.dataset.id;
+    const item = this.data.inspirationCollections.find(option => option.id === id);
+    if (!item) return;
+    wx.showModal({
+      title: item.title,
+      content: item.note,
+      showCancel: false,
+      confirmText: '知道了',
+    });
   },
 
   onTapItem(e) {

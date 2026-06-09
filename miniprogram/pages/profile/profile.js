@@ -16,8 +16,14 @@ Page({
     loadingProfile: false,
     lastLoadedAt: 0,
     showCommunity: false,
+    showPointLogsPanel: false,
     authorWechatCard: AUTHOR_WECHAT_CARD,
     serviceAvailable: false,
+    communityMenuText: '联系作者',
+    communityMenuSub: '添加作者微信，交流画面灵感',
+    communityBadgeText: '名片码',
+    communityTitle: '联系梦倩绘境作者',
+    communityDesc: '长按或保存下方微信名片码，添加作者微信后备注「梦倩绘境」，一起交流画面灵感与审美参考。',
   },
 
   onShow() {
@@ -29,10 +35,24 @@ Page({
   async loadServiceAvailability() {
     try {
       const data = await request('/api/images/availability', { auth: false });
-      this.setData({ serviceAvailable: data.available !== false });
+      this.applyServiceMode(data.available !== false);
     } catch {
-      this.setData({ serviceAvailable: false });
+      this.applyServiceMode(false);
     }
+  },
+
+  applyServiceMode(serviceAvailable) {
+    this.setData({
+      serviceAvailable,
+      showPointLogsPanel: serviceAvailable && this.data.showPoints,
+      communityMenuText: serviceAvailable ? '加交流群领积分' : '联系作者',
+      communityMenuSub: serviceAvailable ? '添加作者微信，进群领取福利' : '添加作者微信，交流画面灵感',
+      communityBadgeText: serviceAvailable ? '福利' : '名片码',
+      communityTitle: serviceAvailable ? '加入梦倩绘境交流群' : '联系梦倩绘境作者',
+      communityDesc: serviceAvailable
+        ? '长按或保存下方微信名片码，添加作者微信后备注「梦倩绘境」，进群领取积分和交流提示词。'
+        : '长按或保存下方微信名片码，添加作者微信后备注「梦倩绘境」，一起交流画面灵感与审美参考。',
+    });
   },
 
   renderCachedProfile() {
@@ -68,20 +88,22 @@ Page({
   },
 
   goCheckin() {
+    if (!this.data.serviceAvailable) return;
     wx.navigateTo({ url: '/pages/checkin/checkin' });
   },
 
   goCdk() {
+    if (!this.data.serviceAvailable) return;
     wx.navigateTo({ url: '/pages/cdk/cdk' });
   },
 
   async goPoints() {
     if (this.data.showPoints) {
-      this.setData({ showPoints: false });
+      this.setData({ showPoints: false, showPointLogsPanel: false });
       return;
     }
     if (this.data.pointLogs.length > 0) {
-      this.setData({ showPoints: true });
+      this.setData({ showPoints: true, showPointLogsPanel: this.data.serviceAvailable });
       return;
     }
     try {
@@ -92,7 +114,7 @@ Page({
         amountText: `${item.amount > 0 ? '+' : ''}${item.amount}`,
         amountClass: item.amount > 0 ? 'positive' : 'negative',
       }));
-      this.setData({ pointLogs, showPoints: true });
+      this.setData({ pointLogs, showPoints: true, showPointLogsPanel: this.data.serviceAvailable });
     } catch {}
   },
 

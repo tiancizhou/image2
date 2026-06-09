@@ -31,6 +31,38 @@ Page({
     userPoints: 0,
     serviceAvailable: false,
     serviceChecked: false,
+    previewVisible: false,
+    previewItem: null,
+    galleryItems: [
+      {
+        id: 'morning-window',
+        title: '晨光窗边',
+        image: '/static/gallery/morning-window.svg',
+        desc: '奶油白窗帘、浅金阳光、木质桌面，适合温柔日常感。',
+        detail: '画面建议：主体靠近窗边，背景保留大面积留白，用浅金色光线制造安静、柔和的氛围。',
+      },
+      {
+        id: 'floating-cloud',
+        title: '云上漫游',
+        image: '/static/gallery/floating-cloud.svg',
+        desc: '低饱和蓝天、蓬松云层、轻盈主体，适合梦境旅行主题。',
+        detail: '画面建议：把主体放在画面下三分之一，天空占更多空间，使用蓝白渐变增强空气感。',
+      },
+      {
+        id: 'rainy-neon',
+        title: '雨夜霓虹',
+        image: '/static/gallery/rainy-neon.svg',
+        desc: '深色街景、粉橙反光、玻璃雨滴，适合故事感画面。',
+        detail: '画面建议：用雨滴和地面反光增加层次，霓虹色控制在局部，避免画面过于杂乱。',
+      },
+      {
+        id: 'quiet-garden',
+        title: '静谧花园',
+        image: '/static/gallery/quiet-garden.svg',
+        desc: '橄榄绿、雾面白、柔焦花丛，适合自然治愈氛围。',
+        detail: '画面建议：前景放少量虚化枝叶，中景安排主体，背景保持柔焦，让画面更有纵深。',
+      },
+    ],
   },
 
   onLoad() {
@@ -52,7 +84,7 @@ Page({
         serviceChecked: true,
       });
     } catch (err) {
-      this.setData({ serviceAvailable: true, serviceChecked: true });
+      this.setData({ serviceAvailable: false, serviceChecked: true });
     }
   },
 
@@ -160,11 +192,60 @@ Page({
     this.setData({ sourceImage: '', sourceFilePath: '', sourceGenerationId: '', sourceFromHistory: false, uploadAreaClass: '', resultImage: '' });
   },
 
+  onGalleryItemTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const item = this.data.galleryItems.find(option => option.id === id);
+    if (!item) return;
+    wx.showModal({
+      title: item.title,
+      content: item.detail,
+      cancelText: '关闭',
+      confirmText: '查看图片',
+      success: (res) => {
+        if (!res.confirm) return;
+        this.openGalleryPreview(item);
+      },
+    });
+  },
+
+  onGalleryImageTap(e) {
+    const id = e.currentTarget.dataset.id;
+    const item = this.data.galleryItems.find(option => option.id === id);
+    if (!item) return;
+    this.openGalleryPreview(item);
+  },
+
+  openGalleryPreview(item) {
+    this.setData({
+      previewVisible: true,
+      previewItem: item,
+    });
+  },
+
+  closeGalleryPreview() {
+    this.setData({
+      previewVisible: false,
+      previewItem: null,
+    });
+  },
+
+  showGalleryHint(e) {
+    const id = e.currentTarget.dataset.id;
+    const item = this.data.galleryItems.find(option => option.id === id);
+    if (!item) return;
+    wx.showModal({
+      title: item.title,
+      content: item.detail,
+      showCancel: false,
+      confirmText: '知道了',
+    });
+  },
+
   async onCreate() {
     const { mode, prompt, size, sourceFilePath, sourceGenerationId, generating, userPoints, pointsCost, imagePromptFallback } = this.data;
     if (generating) return;
     if (!this.data.serviceAvailable) {
-      wx.showToast({ title: '创作服务暂未开放', icon: 'none' });
+      wx.showToast({ title: '请先浏览灵感主题', icon: 'none' });
       return;
     }
     if (mode === 'edit' && !sourceFilePath && !sourceGenerationId) {
