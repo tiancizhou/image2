@@ -257,6 +257,7 @@ nav a:hover {
   animation: riseIn 0.5s ease both;
   max-width: 1440px;
   position: relative;
+  contain: layout paint;
 }
 
 .page-header {
@@ -313,6 +314,7 @@ nav a:hover {
   margin-bottom: 18px;
   padding: 22px;
   overflow-x: auto;
+  contain: content;
 }
 
 .metric-card {
@@ -530,6 +532,33 @@ tr:hover td {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.error-reason {
+  max-width: 320px;
+}
+
+.pager {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.pager > div {
+  display: flex;
+  gap: 8px;
+}
+
+.pager .btn:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+  opacity: 0.5;
+  transform: none;
 }
 
 .empty,

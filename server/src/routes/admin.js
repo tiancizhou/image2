@@ -11,6 +11,11 @@ const channelsService = require('../services/channels');
 
 const router = express.Router();
 
+function pageSize(queryValue, fallback = 20, max = 50) {
+  const value = parseInt(queryValue, 10) || fallback;
+  return Math.min(Math.max(value, 1), max);
+}
+
 router.post('/login', async (req, res, next) => {
   try {
     const { username, password } = req.body;
@@ -37,8 +42,8 @@ router.post('/login', async (req, res, next) => {
 router.get('/users', adminAuth, async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const pageSize = parseInt(req.query.pageSize) || 20;
-    const offset = (page - 1) * pageSize;
+    const limit = pageSize(req.query.pageSize);
+    const offset = (page - 1) * limit;
     const search = req.query.search || '';
 
     let where = '';
@@ -52,12 +57,12 @@ router.get('/users', adminAuth, async (req, res, next) => {
       `SELECT id, openid, nickname, avatar_url, points, consecutive_checkins, last_checkin_date, created_at, last_login_at
        FROM users ${where}
        ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-      [...params, pageSize, offset]
+      [...params, limit, offset]
     );
     const { rows: [{ count }] } = await db.query(
       `SELECT COUNT(*) FROM users ${where}`, params
     );
-    res.json({ list: rows, total: parseInt(count), page, pageSize });
+    res.json({ list: rows, total: parseInt(count), page, pageSize: limit });
   } catch (err) {
     next(err);
   }
@@ -83,8 +88,8 @@ router.post('/users/:id/recharge', adminAuth, async (req, res, next) => {
 router.get('/generations', adminAuth, async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const pageSize = parseInt(req.query.pageSize) || 20;
-    const offset = (page - 1) * pageSize;
+    const limit = pageSize(req.query.pageSize);
+    const offset = (page - 1) * limit;
 
     const { rows } = await db.query(
       `SELECT g.id, g.type, g.prompt, g.model, g.size, g.points_cost, g.status, g.error_message, g.created_at,
@@ -93,10 +98,10 @@ router.get('/generations', adminAuth, async (req, res, next) => {
        LEFT JOIN users u ON g.user_id = u.id
        LEFT JOIN api_channels c ON g.channel_id = c.id
        ORDER BY g.created_at DESC LIMIT $1 OFFSET $2`,
-      [pageSize, offset]
+      [limit, offset]
     );
     const { rows: [{ count }] } = await db.query('SELECT COUNT(*) FROM generations');
-    res.json({ list: rows, total: parseInt(count), page, pageSize });
+    res.json({ list: rows, total: parseInt(count), page, pageSize: limit });
   } catch (err) {
     next(err);
   }
@@ -195,9 +200,9 @@ router.post('/cdk/generate', adminAuth, async (req, res, next) => {
 router.get('/cdk/list', adminAuth, async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const pageSize = parseInt(req.query.pageSize) || 20;
+    const limit = pageSize(req.query.pageSize);
     const status = req.query.status || '';
-    const result = await cdkService.list({ status, page, pageSize });
+    const result = await cdkService.list({ status, page, pageSize: limit });
     res.json(result);
   } catch (err) {
     next(err);

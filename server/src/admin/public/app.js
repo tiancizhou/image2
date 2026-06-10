@@ -2,6 +2,12 @@ const API = '/admin/api';
 let token = localStorage.getItem('admin_token') || '';
 let currentView = 'settings';
 let cachedChannels = [];
+let renderSeq = 0;
+const viewState = {
+  users: { page: 1, pageSize: 20 },
+  generations: { page: 1, pageSize: 20 },
+  cdk: { page: 1, pageSize: 20 },
+};
 
 function intValue(id, fallback) {
   const value = Number.parseInt(document.getElementById(id).value, 10);
@@ -36,6 +42,40 @@ function fmtDate(value) {
   return value ? new Date(value).toLocaleString() : '-';
 }
 
+function compactText(value = '', max = 96) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  return text.length > max ? `${text.slice(0, max)}...` : text;
+}
+
+function pager(view, data) {
+  const totalPages = Math.max(1, Math.ceil((data.total || 0) / data.pageSize));
+  return `
+    <div class="pager" data-view="${view}">
+      <span>第 ${data.page} / ${totalPages} 页，共 ${data.total || 0} 条</span>
+      <div>
+        <button class="btn btn-sm btn-quiet page-prev" ${data.page <= 1 ? 'disabled' : ''}>上一页</button>
+        <button class="btn btn-sm btn-quiet page-next" ${data.page >= totalPages ? 'disabled' : ''}>下一页</button>
+      </div>
+    </div>`;
+}
+
+function bindPager(el, view, data) {
+  const state = viewState[view];
+  const totalPages = Math.max(1, Math.ceil((data.total || 0) / data.pageSize));
+  const prev = el.querySelector('.page-prev');
+  const next = el.querySelector('.page-next');
+  if (prev) prev.onclick = () => {
+    if (state.page <= 1) return;
+    state.page -= 1;
+    renderContent();
+  };
+  if (next) next.onclick = () => {
+    if (state.page >= totalPages) return;
+    state.page += 1;
+    renderContent();
+  };
+}
+
 function settingNumber(settings, key, fallback) {
   const value = Number.parseInt(settings[key], 10);
   return Number.isFinite(value) && value >= 0 ? value : fallback;
@@ -55,6 +95,7 @@ function closeModal() {
 }
 
 function navigate(view) {
+  if (currentView === view) return;
   currentView = view;
   syncNavState();
   renderContent();
@@ -149,13 +190,15 @@ function renderLogin(app) {
 async function renderContent() {
   const el = document.getElementById('content');
   if (!el) return;
+  const seq = ++renderSeq;
   el.innerHTML = `<div class="loading">正在同步控制台数据...</div>`;
   try {
-    if (currentView === 'settings') await renderSettings(el);
-    if (currentView === 'users') await renderUsers(el);
-    if (currentView === 'generations') await renderGenerations(el);
-    if (currentView === 'cdk') await renderCdk(el);
+    if (currentView === 'settings') await renderSettings(el, seq);
+    if (currentView === 'users') await renderUsers(el, seq);
+    if (currentView === 'generations') await renderGenerations(el, seq);
+    if (currentView === 'cdk') await renderCdk(el, seq);
   } catch (err) {
+    if (seq !== renderSeq) return;
     el.innerHTML = `<div class="error-box">加载失败：${escapeHtml(err.message)}</div>`;
   }
 }
@@ -172,11 +215,12 @@ function pageHeader(title, desc, action = '') {
     </div>`;
 }
 
-async function renderSettings(el) {
+async function renderSettings(el, seq) {
   const [settings, channelRes] = await Promise.all([
     request('/settings'),
     request('/channels'),
   ]);
+  if (seq !== renderSeq) return;
   cachedChannels = channelRes.list || [];
 
   const openCount = cachedChannels.filter((c) => c.circuit_status === 'open').length;
@@ -399,8 +443,10 @@ function bindChannelForm() {
   };
 }
 
-async function renderUsers(el) {
-  const data = await request('/users?page=1&pageSize=20');
+async function renderUsers(el, seq) {
+  const state = viewState.users;
+  const data = await request(`/users?page=${state.page}&pageSize=${state.pageSize}`);
+  if (seq !== renderSeq) return;
   el.innerHTML = `
     ${pageHeader('用户管理', '查看用户积分、签到状态，并为用户手动充值。')}
     <section class="card">
@@ -417,11 +463,13 @@ async function renderUsers(el) {
             <td><button class="btn btn-sm btn-secondary recharge-btn" data-id="${u.id}" data-name="${escapeHtml(u.nickname || u.id)}">充值</button></td>
           </tr>`).join('')}</tbody>
       </table>
+      ${pager('users', data)}
     </section>`;
 
   document.querySelectorAll('.recharge-btn').forEach((btn) => {
     btn.onclick = () => showRechargeModal(btn.dataset.id, btn.dataset.name);
   });
+  bindPager(el, 'users', data);
 }
 
 function showRechargeModal(userId, userName) {
@@ -489,8 +537,10 @@ function showRechargeModal(userId, userName) {
   };
 }
 
-async function renderGenerations(el) {
-  const data = await request('/generations?page=1&pageSize=20');
+async function renderGenerations(el, seq) {
+  const state = viewState.generations;
+  const data = await request(`/generations?page=${state.page}&pageSize=${state.pageSize}`);
+  if (seq !== renderSeq) return;
   const statusLabel = { pending: '生成中', success: '成功', failed: '失败' };
   const typeLabel = { text2img: '文生图', img2img: '图片编辑' };
   el.innerHTML = `
@@ -503,15 +553,17 @@ async function renderGenerations(el) {
             <td>${g.id}</td>
             <td>${escapeHtml(g.user_nickname || g.user_id || '-')}</td>
             <td>${typeLabel[g.type] || g.type}</td>
-            <td class="prompt-cell" title="${escapeHtml(g.prompt)}">${escapeHtml(g.prompt)}</td>
+            <td class="prompt-cell" title="${escapeHtml(g.prompt)}">${escapeHtml(compactText(g.prompt, 80))}</td>
             <td>${escapeHtml(g.model)}</td>
             <td>${escapeHtml(g.channel_name || channelFallback(g.error_message))}</td>
             <td><span class="pill ${g.status === 'failed' ? 'bad' : ''}">${statusLabel[g.status] || g.status}</span></td>
-            <td class="prompt-cell" title="${escapeHtml(g.error_message || '')}">${escapeHtml(g.error_message || '-')}</td>
+            <td class="prompt-cell error-reason" title="${escapeHtml(g.error_message || '')}">${escapeHtml(compactText(g.error_message || '-', 90))}</td>
             <td>${fmtDate(g.created_at)}</td>
           </tr>`).join('')}</tbody>
       </table>
+      ${pager('generations', data)}
     </section>`;
+  bindPager(el, 'generations', data);
 }
 
 function channelFallback(errorMessage) {
@@ -521,8 +573,10 @@ function channelFallback(errorMessage) {
   return '选择前/聚合失败';
 }
 
-async function renderCdk(el) {
-  const data = await request('/cdk/list?page=1&pageSize=20');
+async function renderCdk(el, seq) {
+  const state = viewState.cdk;
+  const data = await request(`/cdk/list?page=${state.page}&pageSize=${state.pageSize}`);
+  if (seq !== renderSeq) return;
   el.innerHTML = `
     ${pageHeader('CDK 管理', '批量生成积分兑换码，支持运营发放。')}
     <section class="card cdk-maker">
@@ -544,7 +598,9 @@ async function renderCdk(el) {
             <td>${fmtDate(c.created_at)}</td>
           </tr>`).join('')}</tbody>
       </table>
+      ${pager('cdk', data)}
     </section>`;
+  bindPager(el, 'cdk', data);
 
   document.getElementById('cdk-gen-btn').onclick = async () => {
     try {
