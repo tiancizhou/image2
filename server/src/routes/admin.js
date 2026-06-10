@@ -8,12 +8,42 @@ const settingsService = require('../services/settings');
 const pointsService = require('../services/points');
 const cdkService = require('../services/cdk');
 const channelsService = require('../services/channels');
+const imageStorage = require('../services/image-storage');
 
 const router = express.Router();
 
 function pageSize(queryValue, fallback = 20, max = 50) {
   const value = parseInt(queryValue, 10) || fallback;
   return Math.min(Math.max(value, 1), max);
+}
+
+function parseDateInput(value, fieldName) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    const err = new Error(`${fieldName}格式不正确`);
+    err.status = 400;
+    throw err;
+  }
+  return date;
+}
+
+function collectGenerationFiles(rows) {
+  const files = new Set();
+  for (const row of rows) {
+    for (const field of ['result_image_path', 'thumbnail_image_path', 'source_image_path']) {
+      if (!row[field]) continue;
+      String(row[field]).split(',').map(item => item.trim()).filter(Boolean).forEach(file => files.add(file));
+    }
+  }
+  return files;
+}
+
+function hasGenerationFile(row, file) {
+  return ['result_image_path', 'thumbnail_image_path', 'source_image_path'].some((field) => {
+    if (!row[field]) return false;
+    return String(row[field]).split(',').map(item => item.trim()).includes(file);
+  });
 }
 
 router.post('/login', async (req, res, next) => {
@@ -102,6 +132,70 @@ router.get('/generations', adminAuth, async (req, res, next) => {
     );
     const { rows: [{ count }] } = await db.query('SELECT COUNT(*) FROM generations');
     res.json({ list: rows, total: parseInt(count), page, pageSize: limit });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/generations/range', adminAuth, async (req, res, next) => {
+  try {
+    const startAt = parseDateInput(req.body.start_at, '开始时间');
+    const endAt = parseDateInput(req.body.end_at, '结束时间');
+    if (!startAt && !endAt) return res.status(400).json({ error: '请至少选择一个时间范围' });
+    if (startAt && endAt && startAt.getTime() > endAt.getTime()) {
+      return res.status(400).json({ error: '开始时间不能晚于结束时间' });
+    }
+
+    const where = [];
+    const params = [];
+    if (startAt) {
+      params.push(startAt);
+      where.push(`created_at >= $${params.length}`);
+    }
+    if (endAt) {
+      params.push(endAt);
+      where.push(`created_at <= $${params.length}`);
+    }
+
+    const condition = where.join(' AND ');
+    const { rows } = await db.query(
+      `SELECT id, result_image_path, thumbnail_image_path, source_image_path
+       FROM generations
+       WHERE ${condition} AND status <> 'pending'`,
+      params
+    );
+    const { rows: [{ count: skippedPending }] } = await db.query(
+      `SELECT COUNT(*) FROM generations
+       WHERE ${condition} AND status = 'pending'`,
+      params
+    );
+    if (rows.length === 0) return res.json({ deleted: 0, files_deleted: 0, skipped_pending: Number(skippedPending) });
+
+    const files = collectGenerationFiles(rows);
+    await db.query(
+      `DELETE FROM generations WHERE id = ANY($1::int[])`,
+      [rows.map(row => row.id)]
+    );
+    let filesDeleted = 0;
+    const remainingFiles = [...files];
+    let referencedFiles = new Set();
+    if (remainingFiles.length > 0) {
+      const { rows: remainingRows } = await db.query(
+        `SELECT result_image_path, thumbnail_image_path, source_image_path
+         FROM generations
+         WHERE result_image_path IS NOT NULL
+            OR thumbnail_image_path IS NOT NULL
+            OR source_image_path IS NOT NULL`
+      );
+      referencedFiles = new Set(remainingFiles.filter(file => remainingRows.some(row => hasGenerationFile(row, file))));
+    }
+    for (const file of files) {
+      if (referencedFiles.has(file)) continue;
+      imageStorage.deleteImage(file);
+      filesDeleted += 1;
+    }
+
+    res.json({ deleted: rows.length, files_deleted: filesDeleted, skipped_pending: Number(skippedPending) });
   } catch (err) {
     next(err);
   }

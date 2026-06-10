@@ -544,7 +544,7 @@ async function renderGenerations(el, seq) {
   const statusLabel = { pending: '生成中', success: '成功', failed: '失败' };
   const typeLabel = { text2img: '文生图', img2img: '图片编辑' };
   el.innerHTML = `
-    ${pageHeader('生成记录', '追踪用户请求、模型、渠道命中和失败原因。')}
+    ${pageHeader('生成记录', '追踪用户请求、模型、渠道命中和失败原因。', '<button class="btn btn-danger" id="cleanup-generations">按时间清理</button>')}
     <section class="card">
       <table>
         <thead><tr><th>ID</th><th>用户</th><th>类型</th><th>提示词</th><th>模型</th><th>渠道</th><th>状态</th><th>失败原因</th><th>时间</th></tr></thead>
@@ -564,6 +564,67 @@ async function renderGenerations(el, seq) {
       ${pager('generations', data)}
     </section>`;
   bindPager(el, 'generations', data);
+  document.getElementById('cleanup-generations').onclick = showGenerationCleanupModal;
+}
+
+function showGenerationCleanupModal() {
+  closeModal();
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop';
+  modal.innerHTML = `
+    <div class="modal-card">
+      <button class="modal-close" type="button" aria-label="关闭">×</button>
+      <p class="eyebrow">DATA CLEANUP</p>
+      <h3>清理生成记录</h3>
+      <p class="modal-hint">会删除所选时间范围内的生成记录、原图、缩略图和图生图参考图。该操作不可恢复。</p>
+      <form id="cleanup-form">
+        <label>开始时间
+          <input id="cleanup-start" type="datetime-local">
+        </label>
+        <label>结束时间
+          <input id="cleanup-end" type="datetime-local">
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-quiet" type="button" id="cleanup-cancel">取消</button>
+          <button class="btn btn-danger" type="submit" id="cleanup-submit">确认删除</button>
+        </div>
+      </form>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.onclick = (e) => {
+    if (e.target === modal) closeModal();
+  };
+  modal.querySelector('.modal-close').onclick = closeModal;
+  document.getElementById('cleanup-cancel').onclick = closeModal;
+  document.getElementById('cleanup-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const startAt = document.getElementById('cleanup-start').value;
+    const endAt = document.getElementById('cleanup-end').value;
+    if (!startAt && !endAt) {
+      toast('请至少选择一个时间', 'error');
+      return;
+    }
+    if (!confirm('确定删除该时间范围内的生成记录和图片文件？此操作不可恢复。')) return;
+
+    const submit = document.getElementById('cleanup-submit');
+    submit.disabled = true;
+    submit.textContent = '删除中...';
+    try {
+      const result = await request('/generations/range', {
+        method: 'DELETE',
+        body: JSON.stringify({ start_at: startAt, end_at: endAt }),
+      });
+      closeModal();
+      toast(`已删除 ${result.deleted || 0} 条记录，${result.files_deleted || 0} 个文件`);
+      viewState.generations.page = 1;
+      renderContent();
+    } catch (err) {
+      toast(err.message, 'error');
+      submit.disabled = false;
+      submit.textContent = '确认删除';
+    }
+  };
 }
 
 function channelFallback(errorMessage) {

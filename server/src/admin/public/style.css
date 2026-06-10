@@ -660,9 +660,15 @@ tr:hover td {
 }
 
 .modal-user span,
-.modal-user small {
+.modal-user small,
+.modal-hint {
   color: var(--muted);
   font-size: 12px;
+}
+
+.modal-hint {
+  line-height: 1.6;
+  margin: -6px 0 12px;
 }
 
 .modal-user strong {

@@ -175,12 +175,14 @@ router.get('/history', auth, async (req, res, next) => {
 
     const { rows } = await db.query(
       `SELECT id, type, prompt, model, size, result_image_path, thumbnail_image_path, points_cost, status, error_message, created_at
-       FROM generations WHERE user_id = $1
+       FROM generations
+       WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '3 days'
        ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
       [req.userId, pageSize, offset]
     );
     const { rows: [{ count }] } = await db.query(
-      `SELECT COUNT(*) FROM generations WHERE user_id = $1`,
+      `SELECT COUNT(*) FROM generations
+       WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '3 days'`,
       [req.userId]
     );
 
