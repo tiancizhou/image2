@@ -119,6 +119,20 @@
     <button class="save-btn" bindtap="onSaveImage">保存到相册</button>
   </view>
 
+  <view class="task-mask" wx:if="{{showQuickCheckin}}" catchtap="onCloseQuickCheckin">
+    <view class="checkin-modal" catchtap="noop">
+      <view class="checkin-sun">签</view>
+      <text class="task-kicker">DAILY BONUS</text>
+      <text class="task-title">今天还没有签到</text>
+      <text class="task-desc">{{quickCheckinRewardText}}</text>
+      <view class="checkin-streak" wx:if="{{checkinConsecutive > 0}}">当前连续 {{checkinConsecutive}} 天</view>
+      <view class="task-actions">
+        <view class="task-btn secondary" bindtap="onCloseQuickCheckin">稍后再说</view>
+        <view class="task-btn primary" bindtap="onQuickCheckin">{{quickCheckinLoading ? '签到中...' : '立即签到'}}</view>
+      </view>
+    </view>
+  </view>
+
   <view class="task-mask" wx:if="{{showTaskModal}}" catchtap="onCloseTaskModal">
     <view class="task-modal" catchtap="noop">
       <view class="task-orbit">

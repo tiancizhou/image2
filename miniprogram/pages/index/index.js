@@ -25,6 +25,12 @@ Page({
     sourceGenerationId: '',
     sourceFromHistory: false,
     generating: false,
+    showQuickCheckin: false,
+    quickCheckinLoading: false,
+    checkinPromptChecking: false,
+    checkinPromptChecked: false,
+    checkinConsecutive: 0,
+    quickCheckinRewardText: '每日签到可领取积分',
     showTaskModal: false,
     submittedTaskId: '',
     resultImage: '',
@@ -93,6 +99,7 @@ Page({
         serviceAvailable: data.available !== false,
         serviceChecked: true,
       });
+      if (data.available !== false) this.maybeShowQuickCheckin();
     } catch (err) {
       this.setData({ serviceAvailable: false, serviceChecked: true });
     }
@@ -105,6 +112,7 @@ Page({
       app.globalData.userInfo = profile;
       wx.setStorageSync('my_invite_code', profile.invite_code || profile.id);
       this.setData({ userPoints: profile.points });
+      this.maybeShowQuickCheckin();
     } catch (err) {
       if (err.message === '用户不存在') {
         clearLogin();
@@ -114,7 +122,70 @@ Page({
           app.globalData.userInfo = profile;
           wx.setStorageSync('my_invite_code', profile.invite_code || profile.id);
           this.setData({ userPoints: profile.points });
+          this.maybeShowQuickCheckin();
         } catch {}
+      }
+    }
+  },
+
+  todayKey() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  },
+
+  async maybeShowQuickCheckin() {
+    if (!this.data.serviceAvailable || this.data.checkinPromptChecking || this.data.checkinPromptChecked) return;
+    const dismissKey = `quick_checkin_dismissed_${this.todayKey()}`;
+    if (wx.getStorageSync(dismissKey)) {
+      this.setData({ checkinPromptChecked: true });
+      return;
+    }
+
+    this.setData({ checkinPromptChecking: true });
+    try {
+      await ensureLogin();
+      const status = await request('/api/user/checkin/status');
+      this.setData({
+        checkinPromptChecked: true,
+        checkinPromptChecking: false,
+        checkinConsecutive: status.consecutive || 0,
+        showQuickCheckin: !status.checkedIn,
+        quickCheckinRewardText: status.consecutive > 0
+          ? `已连续 ${status.consecutive} 天，今天签到继续累积奖励`
+          : '完成今日签到，立即领取积分奖励',
+      });
+    } catch {
+      this.setData({ checkinPromptChecked: true, checkinPromptChecking: false });
+    }
+  },
+
+  onCloseQuickCheckin() {
+    wx.setStorageSync(`quick_checkin_dismissed_${this.todayKey()}`, '1');
+    this.setData({ showQuickCheckin: false });
+  },
+
+  async onQuickCheckin() {
+    if (this.data.quickCheckinLoading) return;
+    this.setData({ quickCheckinLoading: true });
+    try {
+      await ensureLogin();
+      const res = await request('/api/user/checkin', { method: 'POST' });
+      let msg = `签到成功，获得 ${res.points} 积分`;
+      if (res.bonusPoints > 0) msg += `，含连续奖励 ${res.bonusPoints}`;
+      wx.showToast({ title: msg, icon: 'none', duration: 2500 });
+      this.setData({
+        showQuickCheckin: false,
+        quickCheckinLoading: false,
+        checkinConsecutive: res.consecutive || this.data.checkinConsecutive,
+      });
+      wx.setStorageSync(`quick_checkin_dismissed_${this.todayKey()}`, '1');
+      this.loadUserPoints();
+    } catch (err) {
+      this.setData({ quickCheckinLoading: false });
+      wx.showToast({ title: err.message || '签到失败', icon: 'none' });
+      if (err.message && err.message.includes('已签到')) {
+        this.setData({ showQuickCheckin: false });
       }
     }
   },
