@@ -51,16 +51,16 @@ async function runJob(job) {
       ? await runImageEdit(job)
       : await runTextGenerate(job);
 
-    const images = await persistImages(result);
-    if (images.length === 0) throw new Error('中转站未返回图片');
+    const persisted = await persistImages(result);
+    if (persisted.images.length === 0) throw new Error('中转站未返回图片');
 
     await db.query(
       `UPDATE generations
-       SET status = $1, result_image_path = $2, channel_id = $3, error_message = NULL
-       WHERE id = $4`,
-      ['success', images.join(','), channel.id, job.id]
+       SET status = $1, result_image_path = $2, thumbnail_image_path = $3, channel_id = $4, error_message = NULL
+       WHERE id = $5`,
+      [ 'success', persisted.images.join(','), persisted.thumbnails.join(','), channel.id, job.id ]
     );
-    console.log(`[Worker] success generation=${job.id} channel=${channel.name} images=${images.length} cost=${job.points_cost} duration=${Date.now() - startedAt}ms`);
+    console.log(`[Worker] success generation=${job.id} channel=${channel.name} images=${persisted.images.length} cost=${job.points_cost} duration=${Date.now() - startedAt}ms`);
   } catch (err) {
     await db.query(
       'UPDATE generations SET status = $1, error_message = $2, channel_id = COALESCE($3, channel_id) WHERE id = $4',
@@ -148,18 +148,22 @@ async function runImageEdit(job) {
 
 async function persistImages(result) {
   const images = [];
+  const thumbnails = [];
   for (const item of (result.data || [])) {
     if (item.b64_json) {
-      images.push(imageStorage.saveBase64Image(item.b64_json));
+      const saved = imageStorage.saveBase64Image(item.b64_json);
+      images.push(saved.filename);
+      thumbnails.push(saved.thumbnail || saved.filename);
     } else if (item.url) {
       const imgRes = await fetch(item.url);
       const buffer = Buffer.from(await imgRes.arrayBuffer());
-      const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
-      fs.writeFileSync(path.join('uploads', filename), buffer);
-      images.push(filename);
+      const ext = path.extname(new URL(item.url).pathname) || '.png';
+      const saved = imageStorage.saveImageBuffer(buffer, ext);
+      images.push(saved.filename);
+      thumbnails.push(saved.thumbnail || saved.filename);
     }
   }
-  return images;
+  return { images, thumbnails };
 }
 
 module.exports = { enqueue, restorePendingJobs };

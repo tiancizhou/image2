@@ -2,6 +2,7 @@ const { request, ensureLogin } = require('../../utils/api');
 const { withInvite, inviteQuery } = require('../../utils/invite');
 const app = getApp();
 const PAGE_SIZE = 10;
+const POLL_INTERVAL_MS = 8000;
 
 function resolveImageUrl(path) {
   if (!path) return '';
@@ -135,6 +136,7 @@ Page({
       const normalized = res.list.map(item => ({
         ...item,
         image_url: resolveImageUrl(item.result_image_path),
+        thumbnail_url: resolveImageUrl(item.thumbnail_image_path || item.result_image_path),
         status_text: statusText(item.status),
         status_class: item.status === 'failed' ? 'failed' : (item.status === 'pending' ? 'pending' : 'success'),
         is_failed: item.status === 'failed',
@@ -164,6 +166,7 @@ Page({
       const normalized = res.list.map(item => ({
         ...item,
         image_url: resolveImageUrl(item.result_image_path),
+        thumbnail_url: resolveImageUrl(item.thumbnail_image_path || item.result_image_path),
         status_text: statusText(item.status),
         status_class: item.status === 'failed' ? 'failed' : (item.status === 'pending' ? 'pending' : 'success'),
         is_failed: item.status === 'failed',
@@ -200,7 +203,7 @@ Page({
         changed = true;
         return;
       }
-      ['status', 'status_text', 'status_class', 'result_image_path', 'image_url', 'error_message'].forEach((key) => {
+      ['status', 'status_text', 'status_class', 'result_image_path', 'thumbnail_image_path', 'image_url', 'thumbnail_url', 'error_message'].forEach((key) => {
         if (prev[key] !== next[key]) {
           patch[`list[${index}].${key}`] = next[key];
           changed = true;
@@ -231,7 +234,7 @@ Page({
     this.setData({ polling: true, showPollingTip: this.data.serviceAvailable });
     this.pollTimer = setInterval(() => {
       this.refreshFirstPage();
-    }, 5000);
+    }, POLL_INTERVAL_MS);
   },
 
   stopPolling() {

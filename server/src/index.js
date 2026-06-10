@@ -16,8 +16,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 静态文件：生成的图片
-app.use('/uploads', express.static(path.join(__dirname, '..', config.uploadDir)));
+// 静态文件：生成的图片。文件名唯一，允许客户端长缓存，历史列表二次进入会快很多。
+app.use('/uploads', express.static(path.join(__dirname, '..', config.uploadDir), {
+  maxAge: '30d',
+  immutable: true,
+}));
 
 // 管理后台静态页面
 app.use('/admin', express.static(path.join(__dirname, 'admin', 'public')));

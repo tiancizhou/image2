@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS generations (
   size VARCHAR NOT NULL DEFAULT '1024x1024',
   source_image_path VARCHAR,
   result_image_path VARCHAR,
+  thumbnail_image_path VARCHAR,
   points_cost INTEGER DEFAULT 0,
   status VARCHAR DEFAULT 'pending',
   error_message TEXT,
@@ -79,6 +80,9 @@ CREATE TABLE IF NOT EXISTS generations (
 );
 
 ALTER TABLE generations ADD COLUMN IF NOT EXISTS channel_id INTEGER;
+ALTER TABLE generations ADD COLUMN IF NOT EXISTS thumbnail_image_path VARCHAR;
+CREATE INDEX IF NOT EXISTS idx_generations_user_created_at ON generations (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_generations_user_status ON generations (user_id, status);
 
 DO $$
 BEGIN

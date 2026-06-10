@@ -42,7 +42,7 @@
       <image
         wx:else
         class="history-thumb"
-        src="{{item.image_url}}"
+        src="{{item.thumbnail_url || item.image_url}}"
         mode="aspectFill"
         lazy-load
       />

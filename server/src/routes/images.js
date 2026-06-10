@@ -170,11 +170,11 @@ router.post('/edit', auth, upload.single('image'), async (req, res, next) => {
 router.get('/history', auth, async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const pageSize = parseInt(req.query.pageSize) || 20;
+    const pageSize = Math.min(Math.max(parseInt(req.query.pageSize) || 10, 1), 10);
     const offset = (page - 1) * pageSize;
 
     const { rows } = await db.query(
-      `SELECT id, type, prompt, model, size, result_image_path, points_cost, status, error_message, created_at
+      `SELECT id, type, prompt, model, size, result_image_path, thumbnail_image_path, points_cost, status, error_message, created_at
        FROM generations WHERE user_id = $1
        ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
       [req.userId, pageSize, offset]
@@ -193,7 +193,7 @@ router.get('/history', auth, async (req, res, next) => {
 router.get('/share/:id', async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT id, type, prompt, model, size, result_image_path, status, created_at
+      `SELECT id, type, prompt, model, size, result_image_path, thumbnail_image_path, status, created_at
        FROM generations
        WHERE id = $1 AND status = 'success' AND result_image_path IS NOT NULL`,
       [req.params.id]
@@ -260,7 +260,7 @@ router.get('/:id', auth, async (req, res, next) => {
 router.delete('/:id', auth, async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      'SELECT result_image_path, source_image_path FROM generations WHERE id = $1 AND user_id = $2',
+      'SELECT result_image_path, thumbnail_image_path, source_image_path FROM generations WHERE id = $1 AND user_id = $2',
       [req.params.id, req.userId]
     );
     if (rows.length === 0) return res.status(404).json({ error: '记录不存在' });
@@ -268,6 +268,11 @@ router.delete('/:id', auth, async (req, res, next) => {
     const gen = rows[0];
     if (gen.result_image_path) {
       for (const f of gen.result_image_path.split(',')) {
+        imageStorage.deleteImage(f.trim());
+      }
+    }
+    if (gen.thumbnail_image_path) {
+      for (const f of gen.thumbnail_image_path.split(',')) {
         imageStorage.deleteImage(f.trim());
       }
     }

@@ -397,13 +397,14 @@ function renderHistory() {
 
   els.historyGrid.innerHTML = state.historyList.map(item => {
     const imageUrl = resolveImageUrl(item.result_image_path);
+    const thumbnailUrl = resolveImageUrl(item.thumbnail_image_path || item.result_image_path);
     const statusClass = item.status === 'pending' ? 'pending' : (item.status === 'failed' ? 'failed' : '');
     const status = statusText(item.status);
     const typeText = item.type === 'img2img' ? '图生图' : '文生图';
     return `
       <article class="history-card" data-id="${item.id}">
         <div class="thumb">
-          ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="生成图">` : `<span>${status}</span>`}
+          ${thumbnailUrl ? `<img src="${escapeHtml(thumbnailUrl)}" alt="生成图">` : `<span>${status}</span>`}
         </div>
         <div class="history-meta">
           <span class="badge ${statusClass}">${status}</span>
