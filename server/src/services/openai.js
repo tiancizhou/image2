@@ -55,7 +55,7 @@ async function requestChannel(channel, endpoint, body, isMultipart = false) {
   }
 
   console.log(`[OpenAI] channel=${channel.name} id=${channel.id} OK ${res.status} ${Date.now() - startedAt}ms`);
-  if (!contentType.toLowerCase().includes('application/json')) {
+  if (/^\s*</.test(text)) {
     const err = new Error(`${channel.name} 返回非 JSON 响应 ${res.status} ${contentType || 'unknown'}: ${text.slice(0, 300)}`);
     err.status = 502;
     err.upstreamStatus = 502;
