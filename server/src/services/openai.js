@@ -42,9 +42,11 @@ async function requestChannel(channel, endpoint, body, isMultipart = false) {
     throw err;
   }
 
+  const contentType = res.headers.get('content-type') || '';
+  const text = await res.text();
+
   if (!res.ok) {
-    const text = await res.text();
-    const err = new Error(`${channel.name} 返回错误 ${res.status}: ${text}`);
+    const err = new Error(`${channel.name} 返回错误 ${res.status}: ${text.slice(0, 1000)}`);
     err.status = 502;
     err.upstreamStatus = res.status;
     err.channelId = channel.id;
@@ -53,7 +55,27 @@ async function requestChannel(channel, endpoint, body, isMultipart = false) {
   }
 
   console.log(`[OpenAI] channel=${channel.name} id=${channel.id} OK ${res.status} ${Date.now() - startedAt}ms`);
-  return res.json();
+  if (!contentType.toLowerCase().includes('application/json')) {
+    const err = new Error(`${channel.name} 返回非 JSON 响应 ${res.status} ${contentType || 'unknown'}: ${text.slice(0, 300)}`);
+    err.status = 502;
+    err.upstreamStatus = 502;
+    err.badResponse = true;
+    err.channelId = channel.id;
+    err.channelName = channel.name;
+    throw err;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (parseErr) {
+    const err = new Error(`${channel.name} 返回 JSON 解析失败: ${parseErr.message}; body=${text.slice(0, 300)}`);
+    err.status = 502;
+    err.upstreamStatus = 502;
+    err.badResponse = true;
+    err.channelId = channel.id;
+    err.channelName = channel.name;
+    throw err;
+  }
 }
 
 async function requestChannelWithRetry(channel, handler) {

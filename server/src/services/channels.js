@@ -40,6 +40,7 @@ function assertValid(channel) {
 function failureWeight(error) {
   const message = String(error?.message || '');
   const status = error?.upstreamStatus || error?.status;
+  if (error?.badResponse || message.includes('返回非 JSON 响应') || message.includes('JSON 解析失败')) return 3;
   if (message.includes('aborted due to timeout') || message.includes('TimeoutError')) return 2;
   if (status >= 500) return 2;
   if (message.includes('Upstream request failed') || message.includes('upstream_error')) return 2;

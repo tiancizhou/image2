@@ -205,6 +205,45 @@ router.get('/share/:id', async (req, res, next) => {
   }
 });
 
+router.post('/:id/retry', auth, async (req, res, next) => {
+  try {
+    if (!await hasEnabledChannels()) return res.status(503).json({ error: '创作服务暂未开放' });
+
+    const { rows } = await db.query(
+      `SELECT id, type, prompt, model, size, source_image_path, status
+       FROM generations
+       WHERE id = $1 AND user_id = $2`,
+      [req.params.id, req.userId]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: '记录不存在' });
+
+    const original = rows[0];
+    if (original.status !== 'failed') return res.status(400).json({ error: '只有失败记录可以重试' });
+    if (original.type === 'img2img' && !original.source_image_path) {
+      return res.status(400).json({ error: '原参考图已丢失，无法重试' });
+    }
+    if (original.type === 'img2img' && !fs.existsSync(path.join('uploads', original.source_image_path))) {
+      return res.status(400).json({ error: '原参考图文件已丢失，无法重试' });
+    }
+
+    const cost = await generationPricing.getCostForSize(original.size);
+    const gen = await createGenerationAndReservePoints({
+      userId: req.userId,
+      type: original.type,
+      prompt: original.prompt,
+      model: original.model,
+      size: original.size,
+      sourceImagePath: original.source_image_path,
+      cost,
+    });
+
+    generationWorker.enqueue(gen);
+    res.status(202).json({ id: gen.id, status: 'pending', points_cost: cost });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/:id', auth, async (req, res, next) => {
   try {
     const { rows } = await db.query(

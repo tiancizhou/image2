@@ -53,6 +53,14 @@
         </view>
         <text class="history-prompt">{{item.prompt}}</text>
         <text class="history-info">{{item.size}} · {{item.created_at_text}}</text>
+        <view
+          wx:if="{{item.is_failed}}"
+          class="retry-btn {{item.retrying ? 'disabled' : ''}}"
+          data-id="{{item.id}}"
+          catchtap="onRetry"
+        >
+          {{item.retrying ? '重试中...' : '重新生成'}}
+        </view>
       </view>
     </view>
   </view>

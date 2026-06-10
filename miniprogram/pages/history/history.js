@@ -38,6 +38,7 @@ Page({
     showHistoryGrid: false,
     showEmptyState: false,
     showLoadMore: false,
+    retryingId: '',
     previewVisible: false,
     previewItem: null,
     inspirationCollections: [
@@ -137,6 +138,7 @@ Page({
         status_text: statusText(item.status),
         status_class: item.status === 'failed' ? 'failed' : (item.status === 'pending' ? 'pending' : 'success'),
         is_failed: item.status === 'failed',
+        retrying: false,
         type_text: item.type === 'img2img' ? '图生图' : '文生图',
         created_at_text: formatDateTime(item.created_at),
       }));
@@ -165,6 +167,7 @@ Page({
         status_text: statusText(item.status),
         status_class: item.status === 'failed' ? 'failed' : (item.status === 'pending' ? 'pending' : 'success'),
         is_failed: item.status === 'failed',
+        retrying: false,
         type_text: item.type === 'img2img' ? '图生图' : '文生图',
         created_at_text: formatDateTime(item.created_at),
       }));
@@ -299,6 +302,32 @@ Page({
   onTapItem(e) {
     const id = e.currentTarget.dataset.id;
     wx.navigateTo({ url: `/pages/detail/detail?id=${id}` });
+  },
+
+  async onRetry(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id || this.data.retryingId) return;
+    const index = this.data.list.findIndex(item => String(item.id) === String(id));
+    if (index < 0) return;
+
+    this.setData({
+      retryingId: id,
+      [`list[${index}].retrying`]: true,
+    });
+
+    try {
+      await ensureLogin();
+      const res = await request(`/api/images/${id}/retry`, { method: 'POST' });
+      wx.showToast({ title: `已重新提交，冻结 ${res.points_cost} 积分`, icon: 'none' });
+      this.setData({ list: [], page: 1, hasMore: true, retryingId: '' });
+      await this.loadList();
+    } catch (err) {
+      wx.showToast({ title: err.message || '重试失败', icon: 'none' });
+      this.setData({
+        retryingId: '',
+        [`list[${index}].retrying`]: false,
+      });
+    }
   },
 
   onPullDownRefresh() {

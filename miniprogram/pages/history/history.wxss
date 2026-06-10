@@ -236,6 +236,24 @@
   white-space: nowrap;
 }
 
+.retry-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 54rpx;
+  margin-top: 14rpx;
+  border-radius: 999rpx;
+  color: #fffaf0;
+  background: linear-gradient(135deg, #233026, #70a342);
+  font-size: 22rpx;
+  font-weight: 900;
+}
+
+.retry-btn.disabled {
+  color: #9b9181;
+  background: #eee8de;
+}
+
 .load-more {
   text-align: center;
   padding: 24rpx;
