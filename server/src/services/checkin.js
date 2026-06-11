@@ -2,8 +2,23 @@ const db = require('../db/pool');
 const settings = require('./settings');
 const points = require('./points');
 
+function shanghaiDate(offsetDays = 0) {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const shanghai = new Date(utc + 8 * 60 * 60000 + offsetDays * 86400000);
+  return shanghai.toISOString().slice(0, 10);
+}
+
+function normalizeDate(value) {
+  if (!value) return '';
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  return String(value).slice(0, 10);
+}
+
 async function checkin(userId) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = shanghaiDate();
 
   const { rows: existing } = await db.query(
     'SELECT id FROM checkins WHERE user_id = $1 AND checkin_date = $2',
@@ -19,8 +34,9 @@ async function checkin(userId) {
   );
   const user = userRows[0];
 
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  const consecutive = user.last_checkin_date === yesterday
+  const yesterday = shanghaiDate(-1);
+  const lastCheckinDate = normalizeDate(user.last_checkin_date);
+  const consecutive = lastCheckinDate === yesterday
     ? user.consecutive_checkins + 1
     : 1;
 
@@ -54,7 +70,7 @@ async function checkin(userId) {
 }
 
 async function getStatus(userId) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = shanghaiDate();
   const { rows } = await db.query(
     'SELECT id FROM checkins WHERE user_id = $1 AND checkin_date = $2',
     [userId, today]
@@ -67,8 +83,8 @@ async function getStatus(userId) {
   return {
     checkedIn: rows.length > 0,
     consecutive: userRows[0].consecutive_checkins,
-    lastDate: userRows[0].last_checkin_date,
+    lastDate: normalizeDate(userRows[0].last_checkin_date),
   };
 }
 
-module.exports = { checkin, getStatus };
+module.exports = { checkin, getStatus, shanghaiDate, normalizeDate };
