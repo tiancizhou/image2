@@ -132,13 +132,27 @@ async function generateImage({ prompt, model, size, n }) {
   ));
 }
 
+function detectImageMime(buffer, filename = '') {
+  if (buffer?.length >= 12) {
+    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return 'image/png';
+    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';
+    if (buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'WEBP') return 'image/webp';
+  }
+
+  const ext = String(filename).toLowerCase().split('.').pop();
+  if (ext === 'png') return 'image/png';
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+  if (ext === 'webp') return 'image/webp';
+  return 'image/png';
+}
+
 async function editImage({ prompt, model, size, n, imageBuffer, filename }) {
   const formData = new FormData();
   formData.append('model', model);
   formData.append('prompt', prompt);
   if (size) formData.append('size', size);
   formData.append('n', String(n || 1));
-  formData.append('image', new Blob([imageBuffer]), filename);
+  formData.append('image', new Blob([imageBuffer], { type: detectImageMime(imageBuffer, filename) }), filename);
 
   return withFailover(async (channel) => requestChannel(channel, '/images/edits', formData, true));
 }
