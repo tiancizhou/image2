@@ -52,7 +52,12 @@ async function runJob(job) {
       : await runTextGenerate(job);
 
     const persisted = await persistImages(result);
-    if (persisted.images.length === 0) throw new Error('中转站未返回图片');
+    if (persisted.images.length === 0) {
+      const err = new Error(`中转站未返回图片: ${summarizeImageResponse(result)}`);
+      err.channelId = channel.id;
+      err.channelName = channel.name;
+      throw err;
+    }
 
     await db.query(
       `UPDATE generations
@@ -149,9 +154,9 @@ async function runImageEdit(job) {
 async function persistImages(result) {
   const images = [];
   const thumbnails = [];
-  for (const item of (result.data || [])) {
-    if (item.b64_json) {
-      const saved = imageStorage.saveBase64Image(item.b64_json);
+  for (const item of collectImagePayloads(result)) {
+    if (item.b64) {
+      const saved = imageStorage.saveBase64Image(item.b64);
       images.push(saved.filename);
       thumbnails.push(saved.thumbnail || saved.filename);
     } else if (item.url) {
@@ -164,6 +169,75 @@ async function persistImages(result) {
     }
   }
   return { images, thumbnails };
+}
+
+function collectImagePayloads(result) {
+  const payloads = [];
+  const seen = new Set();
+
+  function add(value) {
+    if (!value || typeof value !== 'string') return;
+    const trimmed = value.trim();
+    if (seen.has(trimmed)) return;
+
+    const dataUrl = trimmed.match(/^data:image\/[a-z0-9.+-]+;base64,(.+)$/i);
+    if (dataUrl) {
+      seen.add(trimmed);
+      payloads.push({ b64: dataUrl[1] });
+      return;
+    }
+
+    if (/^https?:\/\//i.test(trimmed)) {
+      seen.add(trimmed);
+      payloads.push({ url: trimmed });
+      return;
+    }
+
+    if (/^[A-Za-z0-9+/=\r\n]+$/.test(trimmed) && trimmed.length > 200) {
+      seen.add(trimmed);
+      payloads.push({ b64: trimmed });
+    }
+  }
+
+  function visit(value) {
+    if (!value) return;
+    if (typeof value === 'string') {
+      add(value);
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (typeof value !== 'object') return;
+
+    add(value.b64_json);
+    add(value.b64);
+    add(value.base64);
+    add(value.image_base64);
+    add(value.url);
+    add(value.image_url);
+    add(value.data_url);
+
+    if (value.image_url && typeof value.image_url === 'object') visit(value.image_url);
+    if (value.image && typeof value.image === 'object') visit(value.image);
+    if (value.data) visit(value.data);
+    if (value.output) visit(value.output);
+    if (value.content) visit(value.content);
+    if (value.images) visit(value.images);
+  }
+
+  visit(result);
+  return payloads;
+}
+
+function summarizeImageResponse(result) {
+  if (!result || typeof result !== 'object') return '响应为空或格式异常';
+  const keys = Object.keys(result).slice(0, 8).join(',');
+  const dataInfo = Array.isArray(result.data) ? `data.length=${result.data.length}` : 'data=none';
+  const outputInfo = Array.isArray(result.output) ? `output.length=${result.output.length}` : 'output=none';
+  const error = result.error?.message ? ` error=${String(result.error.message).slice(0, 120)}` : '';
+  return `keys=${keys || '-'} ${dataInfo} ${outputInfo}${error}`;
 }
 
 module.exports = { enqueue, restorePendingJobs };
