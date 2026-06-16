@@ -60,7 +60,7 @@
         </view>
         <view wx:elif="{{sourceImages.length}}" class="preview-grid">
           <image wx:for="{{sourceImages}}" wx:key="*this" class="preview-tile" src="{{item}}" mode="aspectFill" />
-          <view class="preview-count">{{sourceImages.length}} 张参考图</view>
+          <view class="preview-count">{{sourceImages.length}}/4 张 · 点击继续添加</view>
         </view>
         <view wx:else class="upload-placeholder">
           <text class="upload-icon">+</text>
@@ -141,11 +141,14 @@
       <view class="task-orbit">
         <view class="task-dot"></view>
       </view>
-      <text class="task-kicker">TASK ACCEPTED</text>
-      <text class="task-title">创作任务已进入队列</text>
-      <text class="task-desc">AI 正在后台生成。完成后会出现在历史列表；提交时会先冻结积分，渠道失败会自动返还。</text>
-      <view class="task-id">任务 #{{submittedTaskId}}</view>
-      <view class="task-actions">
+      <text class="task-kicker">{{taskAccepted ? 'TASK ACCEPTED' : 'SUBMITTING'}}</text>
+      <text class="task-title">{{taskAccepted ? '创作任务已进入队列' : '正在提交任务'}}</text>
+      <text class="task-desc">{{taskAccepted ? 'AI 正在后台生成。完成后会出现在历史列表；提交时会先冻结积分，渠道失败会自动返还。' : taskSubmittingText}}</text>
+      <view wx:if="{{!taskAccepted}}" class="task-progress">
+        <view class="loading-dots"><view></view><view></view><view></view></view>
+      </view>
+      <view wx:if="{{taskAccepted}}" class="task-id">任务 #{{submittedTaskId}}</view>
+      <view wx:if="{{taskAccepted}}" class="task-actions">
         <view class="task-btn secondary" bindtap="onCloseTaskModal">继续创作</view>
         <view class="task-btn primary" bindtap="onGoHistory">去历史查看</view>
       </view>

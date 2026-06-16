@@ -35,6 +35,8 @@ Page({
     checkinConsecutive: 0,
     quickCheckinRewardText: '每日签到可领取积分',
     showTaskModal: false,
+    taskAccepted: false,
+    taskSubmittingText: '正在提交创作任务...',
     submittedTaskId: '',
     resultImage: '',
     pointsCost: 1,
@@ -286,13 +288,20 @@ Page({
   },
 
   onChooseImage() {
+    const currentPaths = this.data.sourceFromHistory ? [] : (this.data.sourceFilePaths || []);
+    const remaining = 4 - currentPaths.length;
+    if (remaining <= 0) {
+      wx.showToast({ title: '最多上传 4 张参考图', icon: 'none' });
+      return;
+    }
     wx.chooseMedia({
-      count: 4,
+      count: remaining,
       mediaType: ['image'],
       sourceType: ['album', 'camera'],
       success: (res) => {
         const files = res.tempFiles || [];
-        const sourceFilePaths = files.map(file => file.tempFilePath).filter(Boolean);
+        const selectedPaths = files.map(file => file.tempFilePath).filter(Boolean);
+        const sourceFilePaths = currentPaths.concat(selectedPaths).filter((file, index, list) => list.indexOf(file) === index).slice(0, 4);
         this.setData({
           sourceImage: sourceFilePaths[0] || '',
           sourceFilePath: sourceFilePaths[0] || '',
@@ -391,13 +400,21 @@ Page({
       return;
     }
 
-    this.syncModeState({ generating: true, resultImage: '' });
+    this.syncModeState({
+      generating: true,
+      resultImage: '',
+      showTaskModal: true,
+      taskAccepted: false,
+      submittedTaskId: '',
+      taskSubmittingText: mode === 'edit' ? '正在处理参考图...' : '正在提交创作任务...',
+    });
 
     try {
       await ensureLogin();
       const finalPrompt = prompt.trim() || imagePromptFallback;
       let res;
       if (mode === 'edit' && sourceGenerationId) {
+        this.setData({ taskSubmittingText: '正在创建图生图任务...' });
         res = await request('/api/images/edit', {
           method: 'POST',
           data: {
@@ -413,6 +430,7 @@ Page({
           uploadedFiles = await this.uploadReferenceImages(sourceFilePaths);
           this.setData({ sourceUploadedFiles: uploadedFiles });
         }
+        this.setData({ taskSubmittingText: '正在创建图生图任务...' });
         res = await request('/api/images/edit', {
           method: 'POST',
           data: {
@@ -424,6 +442,7 @@ Page({
           },
         });
       } else {
+        this.setData({ taskSubmittingText: '正在创建生图任务...' });
         res = await request('/api/images/generate', {
           method: 'POST',
           data: { prompt: finalPrompt, model: 'gpt-image-2', size, n: 1 },
@@ -432,6 +451,7 @@ Page({
 
       this.setData({
         showTaskModal: true,
+        taskAccepted: true,
         submittedTaskId: res.id,
       });
       this.setData({
@@ -441,6 +461,7 @@ Page({
       });
       this.loadUserPoints();
     } catch (err) {
+      this.setData({ showTaskModal: false, taskAccepted: false, submittedTaskId: '' });
       wx.showToast({ title: err.message || (mode === 'edit' ? '编辑失败' : '生成失败'), icon: 'none' });
       this.loadUserPoints();
     } finally {
@@ -449,20 +470,41 @@ Page({
   },
 
   async uploadReferenceImages(filePaths) {
+    const uniquePaths = filePaths.filter((file, index, list) => file && list.indexOf(file) === index).slice(0, 4);
+    this.setData({ taskSubmittingText: `正在上传参考图 0/${uniquePaths.length}` });
     const uploaded = [];
-    try {
-      for (let index = 0; index < filePaths.length; index += 1) {
-        wx.showLoading({ title: `上传参考图 ${index + 1}/${filePaths.length}` });
-        const result = await uploadFile('/api/images/references', filePaths[index], 'image');
-        uploaded.push(result.filename);
-      }
-    } finally {
-      wx.hideLoading();
+    for (let index = 0; index < uniquePaths.length; index += 1) {
+      this.setData({ taskSubmittingText: `正在压缩参考图 ${index + 1}/${uniquePaths.length}` });
+      const uploadPath = await this.compressReferenceImage(uniquePaths[index]);
+      const result = await uploadFile('/api/images/references', uploadPath, 'image', {}, {
+        timeout: 45000,
+        onProgress: (progress) => {
+          this.setData({ taskSubmittingText: `正在上传参考图 ${index}/${uniquePaths.length}（第 ${index + 1} 张 ${progress.progress || 0}%）` });
+        },
+      });
+      uploaded.push(result.filename);
+      this.setData({ taskSubmittingText: `正在上传参考图 ${uploaded.length}/${uniquePaths.length}` });
     }
     return uploaded;
   },
 
+  compressReferenceImage(filePath) {
+    return new Promise((resolve) => {
+      if (!wx.compressImage) {
+        resolve(filePath);
+        return;
+      }
+      wx.compressImage({
+        src: filePath,
+        quality: 50,
+        success: (res) => resolve(res.tempFilePath || filePath),
+        fail: () => resolve(filePath),
+      });
+    });
+  },
+
   onCloseTaskModal() {
+    if (!this.data.taskAccepted && this.data.generating) return;
     this.setData({ showTaskModal: false });
   },
 

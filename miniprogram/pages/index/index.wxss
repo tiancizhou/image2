@@ -575,6 +575,12 @@
   font-weight: 800;
 }
 
+.task-progress {
+  display: flex;
+  justify-content: center;
+  margin-top: 28rpx;
+}
+
 .task-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
