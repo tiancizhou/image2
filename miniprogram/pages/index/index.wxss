@@ -263,6 +263,36 @@
   height: 420rpx;
 }
 
+.preview-grid {
+  position: relative;
+  width: 100%;
+  min-height: 420rpx;
+  padding: 18rpx;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14rpx;
+}
+
+.preview-tile {
+  width: 100%;
+  height: 188rpx;
+  border-radius: 22rpx;
+  background: #101510;
+}
+
+.preview-count {
+  position: absolute;
+  right: 28rpx;
+  bottom: 28rpx;
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  color: #fff8e8;
+  background: rgba(20, 28, 20, 0.78);
+  font-size: 23rpx;
+  font-weight: 700;
+}
+
 .history-source-card {
   width: 100%;
   height: 420rpx;

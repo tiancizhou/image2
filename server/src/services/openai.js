@@ -146,13 +146,17 @@ function detectImageMime(buffer, filename = '') {
   return 'image/png';
 }
 
-async function editImage({ prompt, model, size, n, imageBuffer, filename }) {
+async function editImage({ prompt, model, size, n, imageBuffer, filename, images }) {
   const formData = new FormData();
   formData.append('model', model);
   formData.append('prompt', prompt);
   if (size) formData.append('size', size);
   formData.append('n', String(n || 1));
-  formData.append('image', new Blob([imageBuffer], { type: detectImageMime(imageBuffer, filename) }), filename);
+
+  const imageItems = images?.length ? images : [{ buffer: imageBuffer, filename }];
+  for (const item of imageItems) {
+    formData.append('image', new Blob([item.buffer], { type: detectImageMime(item.buffer, item.filename) }), item.filename);
+  }
 
   return withFailover(async (channel) => requestChannel(channel, '/images/edits', formData, true));
 }

@@ -135,20 +135,36 @@ async function runTextGenerate(job) {
 }
 
 async function runImageEdit(job) {
-  const imagePath = path.join('uploads', job.source_image_path);
-  if (!job.source_image_path || !fs.existsSync(imagePath)) {
+  const sourceFiles = parseSourceImages(job.source_image_path);
+  if (sourceFiles.length === 0) {
     throw new Error(`参考图文件不存在或已丢失: ${job.source_image_path || '-'}`);
   }
-  const imageBuffer = fs.readFileSync(imagePath);
+  const images = [];
+  for (const sourceFile of sourceFiles) {
+    const imagePath = path.join('uploads', sourceFile);
+    if (!fs.existsSync(imagePath)) {
+      throw new Error(`参考图文件不存在或已丢失: ${sourceFile}`);
+    }
+    images.push({
+      buffer: fs.readFileSync(imagePath),
+      filename: path.basename(sourceFile),
+    });
+  }
   const { data, channel } = await openai.editImage({
     prompt: job.prompt,
     model: job.model,
     size: job.size,
     n: 1,
-    imageBuffer,
-    filename: path.basename(job.source_image_path),
+    images,
   });
   return { result: data, channel };
+}
+
+function parseSourceImages(sourceImagePath) {
+  return String(sourceImagePath || '')
+    .split(',')
+    .map(file => file.trim())
+    .filter(Boolean);
 }
 
 async function persistImages(result) {

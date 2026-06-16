@@ -22,6 +22,9 @@ Page({
     size: '1024x1024',
     sourceImage: '',
     sourceFilePath: '',
+    sourceImages: [],
+    sourceFilePaths: [],
+    sourceUploadedFiles: [],
     sourceGenerationId: '',
     sourceFromHistory: false,
     generating: false,
@@ -267,6 +270,9 @@ Page({
       mode: 'edit',
       sourceImage: draft.imageUrl,
       sourceFilePath: '',
+      sourceImages: [draft.imageUrl],
+      sourceFilePaths: [],
+      sourceUploadedFiles: [],
       sourceGenerationId: draft.sourceId || '',
       sourceFromHistory: true,
       uploadAreaClass: 'has-image',
@@ -281,14 +287,18 @@ Page({
 
   onChooseImage() {
     wx.chooseMedia({
-      count: 1,
+      count: 4,
       mediaType: ['image'],
       sourceType: ['album', 'camera'],
       success: (res) => {
-        const file = res.tempFiles[0];
+        const files = res.tempFiles || [];
+        const sourceFilePaths = files.map(file => file.tempFilePath).filter(Boolean);
         this.setData({
-          sourceImage: file.tempFilePath,
-          sourceFilePath: file.tempFilePath,
+          sourceImage: sourceFilePaths[0] || '',
+          sourceFilePath: sourceFilePaths[0] || '',
+          sourceImages: sourceFilePaths,
+          sourceFilePaths,
+          sourceUploadedFiles: [],
           sourceGenerationId: '',
           sourceFromHistory: false,
           uploadAreaClass: 'has-image',
@@ -299,7 +309,17 @@ Page({
   },
 
   onRemoveSource() {
-    this.setData({ sourceImage: '', sourceFilePath: '', sourceGenerationId: '', sourceFromHistory: false, uploadAreaClass: '', resultImage: '' });
+    this.setData({
+      sourceImage: '',
+      sourceFilePath: '',
+      sourceImages: [],
+      sourceFilePaths: [],
+      sourceUploadedFiles: [],
+      sourceGenerationId: '',
+      sourceFromHistory: false,
+      uploadAreaClass: '',
+      resultImage: '',
+    });
   },
 
   onGalleryItemTap(e) {
@@ -352,13 +372,13 @@ Page({
   },
 
   async onCreate() {
-    const { mode, prompt, size, sourceFilePath, sourceGenerationId, generating, userPoints, pointsCost, imagePromptFallback } = this.data;
+    const { mode, prompt, size, sourceFilePaths, sourceUploadedFiles, sourceGenerationId, generating, userPoints, pointsCost, imagePromptFallback } = this.data;
     if (generating) return;
     if (!this.data.serviceAvailable) {
       wx.showToast({ title: '请先浏览灵感主题', icon: 'none' });
       return;
     }
-    if (mode === 'edit' && !sourceFilePath && !sourceGenerationId) {
+    if (mode === 'edit' && sourceFilePaths.length === 0 && sourceUploadedFiles.length === 0 && !sourceGenerationId) {
       wx.showToast({ title: '请先上传图片', icon: 'none' });
       return;
     }
@@ -388,11 +408,20 @@ Page({
           },
         });
       } else if (mode === 'edit') {
-        res = await uploadFile('/api/images/edit', sourceFilePath, 'image', {
-          prompt: finalPrompt,
-          model: 'gpt-image-2',
-          size,
-          n: '1',
+        let uploadedFiles = sourceUploadedFiles;
+        if (uploadedFiles.length === 0) {
+          uploadedFiles = await this.uploadReferenceImages(sourceFilePaths);
+          this.setData({ sourceUploadedFiles: uploadedFiles });
+        }
+        res = await request('/api/images/edit', {
+          method: 'POST',
+          data: {
+            prompt: finalPrompt,
+            model: 'gpt-image-2',
+            size,
+            n: 1,
+            source_images: uploadedFiles.join(','),
+          },
         });
       } else {
         res = await request('/api/images/generate', {
@@ -417,6 +446,20 @@ Page({
     } finally {
       this.syncModeState({ generating: false });
     }
+  },
+
+  async uploadReferenceImages(filePaths) {
+    const uploaded = [];
+    try {
+      for (let index = 0; index < filePaths.length; index += 1) {
+        wx.showLoading({ title: `上传参考图 ${index + 1}/${filePaths.length}` });
+        const result = await uploadFile('/api/images/references', filePaths[index], 'image');
+        uploaded.push(result.filename);
+      }
+    } finally {
+      wx.hideLoading();
+    }
+    return uploaded;
   },
 
   onCloseTaskModal() {

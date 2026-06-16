@@ -58,11 +58,14 @@
           <text class="history-source-title">已引用历史图片</text>
           <text class="history-source-desc">无需重新下载或上传，提交后直接进入队列</text>
         </view>
-        <image wx:elif="{{sourceImage}}" class="preview-image" src="{{sourceImage}}" mode="aspectFit" />
+        <view wx:elif="{{sourceImages.length}}" class="preview-grid">
+          <image wx:for="{{sourceImages}}" wx:key="*this" class="preview-tile" src="{{item}}" mode="aspectFill" />
+          <view class="preview-count">{{sourceImages.length}} 张参考图</view>
+        </view>
         <view wx:else class="upload-placeholder">
           <text class="upload-icon">+</text>
           <text class="upload-text">上传参考图</text>
-          <text class="upload-hint">支持相册或拍照，可不填描述</text>
+          <text class="upload-hint">最多 4 张，支持相册或拍照</text>
         </view>
       </view>
     </view>

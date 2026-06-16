@@ -82,7 +82,10 @@ function bindEvents() {
   els.navItems.forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
   els.modeBtns.forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.mode)));
   els.imageInput.addEventListener('change', () => {
-    els.fileName.textContent = els.imageInput.files[0]?.name || '选择一张图片作为再创作基础';
+    const files = Array.from(els.imageInput.files || []).slice(0, 4);
+    els.fileName.textContent = files.length
+      ? files.map(file => file.name).join('、')
+      : '最多选择 4 张图片作为再创作基础';
   });
   els.promptInput.addEventListener('input', updatePromptCount);
   els.sizeSelect.addEventListener('change', updateSelectedCost);
@@ -348,7 +351,7 @@ async function onSubmitCreate(event) {
     updatePromptCount();
     if (state.mode === 'img2img') {
       els.imageInput.value = '';
-      els.fileName.textContent = '选择一张图片作为再创作基础';
+      els.fileName.textContent = '最多选择 4 张图片作为再创作基础';
     }
     await Promise.all([loadProfile(), loadHistory(true), loadPointLogs()]);
     toast('任务已提交，完成后可在历史查看');
@@ -367,7 +370,7 @@ function submitTextGenerate(payload) {
 
 function submitImageEdit(payload) {
   const form = new FormData();
-  form.append('image', els.imageInput.files[0]);
+  Array.from(els.imageInput.files || []).slice(0, 4).forEach(file => form.append('image', file));
   form.append('prompt', payload.prompt);
   form.append('model', payload.model);
   form.append('size', payload.size);

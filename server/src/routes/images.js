@@ -13,9 +13,50 @@ const upload = multer({ dest: 'uploads/tmp/' });
 const router = express.Router();
 
 const VALID_SIZES = ['1024x1024', '1536x1024', '1024x1536', '2048x2048', '3840x2160'];
+const MAX_REFERENCE_IMAGES = 4;
 
 function generationLabel(type) {
   return type === 'img2img' ? '图生图' : '文生图';
+}
+
+function sourcePathValue(files) {
+  return files.filter(Boolean).join(',');
+}
+
+function parseSourceImages(value) {
+  if (Array.isArray(value)) return value.flatMap(parseSourceImages);
+  return String(value || '')
+    .split(',')
+    .map(file => file.trim())
+    .filter(Boolean)
+    .filter(file => !file.includes('..') && !path.isAbsolute(file));
+}
+
+function moveUploadedFile(file) {
+  const ext = path.extname(file.originalname || '.png') || '.png';
+  const sourceFilename = `${Date.now()}-source-${Math.random().toString(36).slice(2, 8)}${ext}`;
+  fs.renameSync(file.path, path.join('uploads', sourceFilename));
+  return sourceFilename;
+}
+
+function rowHasFileReference(row, file) {
+  return ['result_image_path', 'thumbnail_image_path', 'source_image_path'].some((field) => {
+    if (!row[field]) return false;
+    return parseSourceImages(row[field]).includes(file);
+  });
+}
+
+async function deleteGenerationFileIfUnreferenced(file) {
+  if (!file) return;
+  const { rows } = await db.query(
+    `SELECT result_image_path, thumbnail_image_path, source_image_path
+     FROM generations
+     WHERE result_image_path IS NOT NULL
+        OR thumbnail_image_path IS NOT NULL
+        OR source_image_path IS NOT NULL`
+  );
+  if (rows.some(row => rowHasFileReference(row, file))) return;
+  imageStorage.deleteImage(file);
 }
 
 async function hasEnabledChannels() {
@@ -118,13 +159,30 @@ router.post('/generate', auth, async (req, res, next) => {
   }
 });
 
-router.post('/edit', auth, upload.single('image'), async (req, res, next) => {
+router.post('/references', auth, upload.single('image'), async (req, res, next) => {
   let sourceFilename = null;
+  try {
+    if (!req.file) return res.status(400).json({ error: '请上传图片' });
+    sourceFilename = moveUploadedFile(req.file);
+    res.status(201).json({ filename: sourceFilename });
+  } catch (err) {
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    if (sourceFilename) imageStorage.deleteImage(sourceFilename);
+    next(err);
+  }
+});
+
+router.post('/edit', auth, upload.array('image', MAX_REFERENCE_IMAGES), async (req, res, next) => {
+  const sourceFilenames = [];
+  const movedFilenames = [];
   try {
     if (!await hasEnabledChannels()) return res.status(503).json({ error: '创作服务暂未开放' });
     const { prompt, model, size, source_generation_id } = req.body;
+    const sourceImages = parseSourceImages(req.body.source_images).slice(0, MAX_REFERENCE_IMAGES);
     if (!prompt) return res.status(400).json({ error: '请输入提示词' });
-    if (!req.file && !source_generation_id) return res.status(400).json({ error: '请上传图片' });
+    if (!req.files?.length && !source_generation_id && sourceImages.length === 0) return res.status(400).json({ error: '请上传图片' });
     if (size && !VALID_SIZES.includes(size)) return res.status(400).json({ error: '不支持的尺寸' });
 
     const useModel = model || await settings.get('default_model') || 'gpt-image-2';
@@ -138,10 +196,20 @@ router.post('/edit', auth, upload.single('image'), async (req, res, next) => {
         [source_generation_id, req.userId]
       );
       if (rows.length === 0) return res.status(400).json({ error: '参考图记录不存在或未生成完成' });
-      sourceFilename = String(rows[0].result_image_path).split(',')[0].trim();
-    } else {
-      sourceFilename = `${Date.now()}-source-${Math.random().toString(36).slice(2, 8)}${path.extname(req.file.originalname || '.png')}`;
-      fs.renameSync(req.file.path, path.join('uploads', sourceFilename));
+      sourceFilenames.push(String(rows[0].result_image_path).split(',')[0].trim());
+    }
+
+    for (const sourceImage of sourceImages) {
+      if (sourceFilenames.length >= MAX_REFERENCE_IMAGES) break;
+      if (!fs.existsSync(path.join('uploads', sourceImage))) return res.status(400).json({ error: `参考图不存在: ${sourceImage}` });
+      sourceFilenames.push(sourceImage);
+    }
+
+    for (const file of (req.files || [])) {
+      if (sourceFilenames.length >= MAX_REFERENCE_IMAGES) break;
+      const movedFilename = moveUploadedFile(file);
+      movedFilenames.push(movedFilename);
+      sourceFilenames.push(movedFilename);
     }
 
     const gen = await createGenerationAndReservePoints({
@@ -150,17 +218,17 @@ router.post('/edit', auth, upload.single('image'), async (req, res, next) => {
       prompt,
       model: useModel,
       size: useSize,
-      sourceImagePath: sourceFilename,
+      sourceImagePath: sourcePathValue(sourceFilenames),
       cost,
     });
 
     generationWorker.enqueue(gen);
     res.status(202).json({ id: gen.id, status: 'pending', points_cost: cost });
   } catch (err) {
-    if (req.file?.path && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
+    for (const file of (req.files || [])) {
+      if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
     }
-    if (sourceFilename && req.file) {
+    for (const sourceFilename of movedFilenames) {
       imageStorage.deleteImage(sourceFilename);
     }
     next(err);
@@ -224,8 +292,9 @@ router.post('/:id/retry', auth, async (req, res, next) => {
     if (original.type === 'img2img' && !original.source_image_path) {
       return res.status(400).json({ error: '原参考图已丢失，无法重试' });
     }
-    if (original.type === 'img2img' && !fs.existsSync(path.join('uploads', original.source_image_path))) {
-      return res.status(400).json({ error: '原参考图文件已丢失，无法重试' });
+    if (original.type === 'img2img') {
+      const missingSource = parseSourceImages(original.source_image_path).find(file => !fs.existsSync(path.join('uploads', file)));
+      if (missingSource) return res.status(400).json({ error: '原参考图文件已丢失，无法重试' });
     }
 
     const cost = await generationPricing.getCostForSize(original.size);
@@ -268,21 +337,10 @@ router.delete('/:id', auth, async (req, res, next) => {
     if (rows.length === 0) return res.status(404).json({ error: '记录不存在' });
 
     const gen = rows[0];
-    if (gen.result_image_path) {
-      for (const f of gen.result_image_path.split(',')) {
-        imageStorage.deleteImage(f.trim());
-      }
-    }
-    if (gen.thumbnail_image_path) {
-      for (const f of gen.thumbnail_image_path.split(',')) {
-        imageStorage.deleteImage(f.trim());
-      }
-    }
-    if (gen.source_image_path) {
-      imageStorage.deleteImage(gen.source_image_path);
-    }
-
     await db.query('DELETE FROM generations WHERE id = $1', [req.params.id]);
+    for (const f of parseSourceImages(gen.result_image_path)) await deleteGenerationFileIfUnreferenced(f);
+    for (const f of parseSourceImages(gen.thumbnail_image_path)) await deleteGenerationFileIfUnreferenced(f);
+    for (const f of parseSourceImages(gen.source_image_path)) await deleteGenerationFileIfUnreferenced(f);
     res.json({ success: true });
   } catch (err) {
     next(err);
