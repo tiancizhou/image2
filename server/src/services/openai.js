@@ -123,13 +123,87 @@ async function withFailover(handler) {
   throw err;
 }
 
+function hasImagePayload(result) {
+  let found = false;
+
+  function add(value) {
+    if (found || !value || typeof value !== 'string') return;
+    const trimmed = value.trim();
+    if (/^data:image\/[a-z0-9.+-]+;base64,/i.test(trimmed)) {
+      found = true;
+      return;
+    }
+    if (/^https?:\/\//i.test(trimmed)) {
+      found = true;
+      return;
+    }
+    if (/^[A-Za-z0-9+/=\r\n]+$/.test(trimmed) && trimmed.length > 200) {
+      found = true;
+    }
+  }
+
+  function visit(value) {
+    if (found || !value) return;
+    if (typeof value === 'string') {
+      add(value);
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (typeof value !== 'object') return;
+
+    add(value.b64_json);
+    add(value.b64);
+    add(value.base64);
+    add(value.image_base64);
+    add(value.url);
+    add(value.image_url);
+    add(value.data_url);
+
+    if (value.image_url && typeof value.image_url === 'object') visit(value.image_url);
+    if (value.image && typeof value.image === 'object') visit(value.image);
+    if (value.data) visit(value.data);
+    if (value.output) visit(value.output);
+    if (value.content) visit(value.content);
+    if (value.images) visit(value.images);
+  }
+
+  visit(result);
+  return found;
+}
+
+function summarizeImageResponse(result) {
+  if (!result || typeof result !== 'object') return '响应为空或格式异常';
+  const keys = Object.keys(result).slice(0, 8).join(',');
+  const dataInfo = Array.isArray(result.data) ? `data.length=${result.data.length}` : 'data=none';
+  const outputInfo = Array.isArray(result.output) ? `output.length=${result.output.length}` : 'output=none';
+  const error = result.error?.message ? ` error=${String(result.error.message).slice(0, 120)}` : '';
+  return `keys=${keys || '-'} ${dataInfo} ${outputInfo}${error}`;
+}
+
+function assertImageResponse(result, channel) {
+  if (hasImagePayload(result)) return result;
+  const err = new Error(`${channel.name} 未返回图片: ${summarizeImageResponse(result)}`);
+  err.status = 502;
+  err.upstreamStatus = 502;
+  err.emptyImageResponse = true;
+  err.channelId = channel.id;
+  err.channelName = channel.name;
+  throw err;
+}
+
 async function generateImage({ prompt, model, size, n }) {
-  return withFailover(async (channel) => requestChannel(
-    channel,
-    '/images/generations',
-    { model, prompt, n: n || 1, size },
-    false
-  ));
+  return withFailover(async (channel) => {
+    const result = await requestChannel(
+      channel,
+      '/images/generations',
+      { model, prompt, n: n || 1, size },
+      false
+    );
+    return assertImageResponse(result, channel);
+  });
 }
 
 function detectImageMime(buffer, filename = '') {
@@ -158,7 +232,10 @@ async function editImage({ prompt, model, size, n, imageBuffer, filename, images
     formData.append('image', new Blob([item.buffer], { type: detectImageMime(item.buffer, item.filename) }), item.filename);
   }
 
-  return withFailover(async (channel) => requestChannel(channel, '/images/edits', formData, true));
+  return withFailover(async (channel) => {
+    const result = await requestChannel(channel, '/images/edits', formData, true);
+    return assertImageResponse(result, channel);
+  });
 }
 
 module.exports = { generateImage, editImage };

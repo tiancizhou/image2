@@ -471,7 +471,7 @@ Page({
 
   async uploadReferenceImages(filePaths) {
     const uniquePaths = filePaths.filter((file, index, list) => file && list.indexOf(file) === index).slice(0, 4);
-    this.setData({ taskSubmittingText: `正在上传参考图 0/${uniquePaths.length}` });
+    this.setData({ taskSubmittingText: `准备上传 ${uniquePaths.length} 张参考图` });
     const uploaded = [];
     for (let index = 0; index < uniquePaths.length; index += 1) {
       this.setData({ taskSubmittingText: `正在压缩参考图 ${index + 1}/${uniquePaths.length}` });
@@ -479,7 +479,7 @@ Page({
       const result = await uploadFile('/api/images/references', uploadPath, 'image', {}, {
         timeout: 45000,
         onProgress: (progress) => {
-          this.setData({ taskSubmittingText: `正在上传参考图 ${index}/${uniquePaths.length}（第 ${index + 1} 张 ${progress.progress || 0}%）` });
+          this.setData({ taskSubmittingText: `正在上传第 ${index + 1}/${uniquePaths.length} 张（${progress.progress || 0}%）` });
         },
       });
       uploaded.push(result.filename);
