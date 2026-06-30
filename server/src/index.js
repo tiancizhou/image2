@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const imageRoutes = require('./routes/images');
 const userRoutes = require('./routes/user');
 const adminRoutes = require('./routes/admin');
+const lotteryRoutes = require('./routes/lottery');
 const generationWorker = require('./services/generation-worker');
 
 const app = express();
@@ -28,10 +29,14 @@ app.use('/admin', express.static(path.join(__dirname, 'admin', 'public')));
 // PC 用户端静态页面
 app.use('/pc', express.static(path.join(__dirname, 'pc', 'public')));
 
+// H5 抽奖活动页
+app.use('/lottery', express.static(path.join(__dirname, 'lottery', 'public')));
+
 // 小程序 API
 app.use('/api/auth', authRoutes);
 app.use('/api/images', imageRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/lottery', lotteryRoutes);
 
 // 管理后台 API
 app.use('/admin/api', adminRoutes);
@@ -44,6 +49,11 @@ app.get('/admin/{*splat}', (req, res) => {
 // PC 用户端 SPA fallback
 app.get('/pc/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'pc', 'public', 'index.html'));
+});
+
+// H5 抽奖活动页 fallback
+app.get('/lottery/{*splat}', (req, res) => {
+  res.sendFile(path.join(__dirname, 'lottery', 'public', 'index.html'));
 });
 
 app.use(errorHandler);

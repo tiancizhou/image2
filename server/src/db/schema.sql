@@ -141,3 +141,69 @@ INSERT INTO settings (key, value) VALUES
   ('checkin_points', '1'),
   ('checkin_consecutive_bonus', '{"7": 5, "30": 20}')
 ON CONFLICT (key) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS lottery_campaigns (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR NOT NULL,
+  description TEXT DEFAULT '',
+  status VARCHAR DEFAULT 'active',
+  starts_at TIMESTAMP DEFAULT NOW(),
+  ends_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS lottery_prizes (
+  id SERIAL PRIMARY KEY,
+  campaign_id INTEGER REFERENCES lottery_campaigns(id) ON DELETE CASCADE,
+  name VARCHAR NOT NULL,
+  type VARCHAR NOT NULL DEFAULT 'points',
+  points INTEGER DEFAULT 0,
+  weight INTEGER NOT NULL DEFAULT 1,
+  stock INTEGER,
+  sort_order INTEGER DEFAULT 100,
+  enabled BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS lottery_chances (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  campaign_id INTEGER REFERENCES lottery_campaigns(id) ON DELETE CASCADE,
+  source VARCHAR NOT NULL,
+  rule_key VARCHAR NOT NULL,
+  amount INTEGER NOT NULL DEFAULT 1,
+  remaining INTEGER NOT NULL DEFAULT 1,
+  remark VARCHAR DEFAULT '',
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, campaign_id, rule_key)
+);
+
+CREATE TABLE IF NOT EXISTS lottery_draws (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  campaign_id INTEGER REFERENCES lottery_campaigns(id) ON DELETE CASCADE,
+  chance_id INTEGER REFERENCES lottery_chances(id) ON DELETE SET NULL,
+  prize_id INTEGER REFERENCES lottery_prizes(id) ON DELETE SET NULL,
+  prize_name VARCHAR NOT NULL,
+  prize_type VARCHAR NOT NULL,
+  points INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_lottery_chances_user_campaign ON lottery_chances (user_id, campaign_id);
+CREATE INDEX IF NOT EXISTS idx_lottery_draws_user_created_at ON lottery_draws (user_id, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_lottery_prizes_campaign_name ON lottery_prizes (campaign_id, name);
+
+INSERT INTO lottery_campaigns (id, name, description, status)
+VALUES (1, '梦倩绘境灵感抽奖', '签到和邀请好友可领取抽奖机会，奖品自动发放到积分账户。', 'active')
+ON CONFLICT (id) DO NOTHING;
+
+SELECT setval(pg_get_serial_sequence('lottery_campaigns', 'id'), GREATEST((SELECT MAX(id) FROM lottery_campaigns), 1));
+
+INSERT INTO lottery_prizes (campaign_id, name, type, points, weight, stock, sort_order, enabled) VALUES
+  (1, '10 积分灵感包', 'points', 10, 5, NULL, 10, TRUE),
+  (1, '5 积分补给', 'points', 5, 15, NULL, 20, TRUE),
+  (1, '3 积分加油站', 'points', 3, 30, NULL, 30, TRUE),
+  (1, '1 积分小确幸', 'points', 1, 45, NULL, 40, TRUE),
+  (1, '谢谢参与', 'none', 0, 20, NULL, 50, TRUE)
+ON CONFLICT (campaign_id, name) DO NOTHING;

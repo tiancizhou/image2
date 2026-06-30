@@ -563,6 +563,7 @@ function pointType(type) {
     checkin: '签到',
     refund: '返还',
     invite: '邀请',
+    lottery: '抽奖',
   };
   return map[type] || '积分';
 }

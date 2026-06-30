@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>梦倩绘境 · 灵感抽奖</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="page-shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">MENGQIAN GALLERY REWARD</p>
+        <h1>把每日灵感，抽成下一次创作燃料。</h1>
+        <p class="lead">连续签到、邀请好友都可以领取抽奖机会。中奖积分会自动进入你的梦倩绘境账户。</p>
+        <div class="hero-actions">
+          <button class="primary-btn" id="claimBtn">领取可用机会</button>
+          <button class="ghost-btn" id="refreshBtn">刷新状态</button>
+        </div>
+      </div>
+      <div class="draw-stage">
+        <div class="orb"></div>
+        <div class="draw-card">
+          <span>剩余次数</span>
+          <strong id="chanceCount">--</strong>
+          <button id="drawBtn">立即抽奖</button>
+          <p id="drawHint">登录后查看你的抽奖机会</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="login-panel" id="loginPanel">
+      <div>
+        <p class="panel-kicker">微信小程序账号登录</p>
+        <h2>扫码确认后，抽奖会绑定到你的同一个用户账户。</h2>
+        <p>如果二维码过期，点击重新生成即可。</p>
+      </div>
+      <div class="qr-box">
+        <img id="qrImage" alt="小程序登录码">
+        <p id="qrStatus">正在生成小程序码...</p>
+        <button class="ghost-btn small" id="newQrBtn">重新生成</button>
+      </div>
+    </section>
+
+    <section class="dashboard hidden" id="dashboard">
+      <div class="stat-strip">
+        <div>
+          <span>当前积分</span>
+          <strong id="pointsText">--</strong>
+        </div>
+        <div>
+          <span>连续签到</span>
+          <strong><b id="checkinText">--</b> 天</strong>
+        </div>
+        <div>
+          <span>邀请好友</span>
+          <strong><b id="inviteText">--</b> 位</strong>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <section class="panel">
+          <div class="section-title">
+            <p>WAYS TO EARN</p>
+            <h2>获取抽奖次数</h2>
+          </div>
+          <div class="rules-list" id="rulesList"></div>
+        </section>
+
+        <section class="panel prizes-panel">
+          <div class="section-title">
+            <p>PRIZE POOL</p>
+            <h2>奖池</h2>
+          </div>
+          <div class="prize-grid" id="prizeGrid"></div>
+        </section>
+      </div>
+
+      <section class="panel history-panel">
+        <div class="section-title">
+          <p>DRAW HISTORY</p>
+          <h2>我的中奖记录</h2>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast hidden" id="toast"></div>
+  <div class="result-modal hidden" id="resultModal">
+    <div class="modal-backdrop" data-close="result"></div>
+    <div class="result-card">
+      <p class="panel-kicker">DRAW RESULT</p>
+      <h2 id="resultTitle">抽奖结果</h2>
+      <p id="resultDesc"></p>
+      <button class="primary-btn" data-close="result">收下</button>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
