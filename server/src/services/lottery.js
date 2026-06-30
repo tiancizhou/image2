@@ -180,6 +180,7 @@ async function getMe(userId) {
 
 async function claimRules(userId) {
   const client = await db.getClient();
+  let granted = [];
   try {
     await client.query('BEGIN');
     const campaign = await getActiveCampaign(client);
@@ -193,7 +194,6 @@ async function claimRules(userId) {
     const claimedKeys = await getClaimedRuleKeys(userId, campaign.id, client);
     const claimableRules = RULES.filter(rule => rule.isMet(stats) && !claimedKeys.has(rule.key));
 
-    const granted = [];
     for (const rule of claimableRules) {
       const { rows } = await client.query(
         `INSERT INTO lottery_chances (user_id, campaign_id, source, rule_key, amount, remaining, remark)
@@ -206,16 +206,17 @@ async function claimRules(userId) {
     }
 
     await client.query('COMMIT');
-    return {
-      granted,
-      me: await getMe(userId),
-    };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
   } finally {
     client.release();
   }
+
+  return {
+    granted,
+    me: await getMe(userId),
+  };
 }
 
 async function draw(userId) {
@@ -305,6 +306,8 @@ async function pickPrize(campaignId, client) {
      WHERE campaign_id = $1
        AND enabled = TRUE
        AND weight > 0
+       AND type = 'points'
+       AND points > 0
        AND (stock IS NULL OR stock > 0)
      ORDER BY id ASC
      FOR UPDATE`,

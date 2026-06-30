@@ -127,17 +127,24 @@ async function claimRules() {
   if (!ensureLogin() || state.busy) return;
   state.busy = true;
   els.claimBtn.disabled = true;
+  els.claimBtn.textContent = '领取中...';
   try {
     const data = await api('/api/lottery/claim-rules', { method: 'POST' });
     state.me = data.me;
     renderMe();
     const amount = data.granted.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-    toast(amount > 0 ? `已领取 ${amount} 次抽奖机会` : '暂无新的可领取机会');
+    if (amount > 0) {
+      showMessage('领取成功', `已领取 ${amount} 次抽奖机会，现在可以直接抽奖。`);
+      toast(`已领取 ${amount} 次抽奖机会`);
+    } else {
+      showNoClaimableHint();
+    }
   } catch (err) {
     toast(err.message || '领取失败');
   } finally {
     state.busy = false;
     els.claimBtn.disabled = false;
+    renderClaimButtonState();
   }
 }
 
@@ -170,6 +177,7 @@ function renderAuth(loggedIn) {
   els.claimBtn.disabled = !loggedIn;
   els.drawBtn.disabled = !loggedIn;
   if (!loggedIn) {
+    els.claimBtn.textContent = '扫码登录后领取';
     els.chanceCount.textContent = '--';
     els.drawHint.textContent = '登录后查看你的抽奖机会';
   }
@@ -196,6 +204,8 @@ function renderMe() {
   els.rulesList.innerHTML = renderRules(me.rules);
   els.prizeGrid.innerHTML = renderPrizes(me.prizes);
   els.historyList.innerHTML = renderHistory(me.history);
+  renderClaimButtonState();
+  bindRuleCards();
 }
 
 function renderRules(rules) {
@@ -204,7 +214,7 @@ function renderRules(rules) {
     const pillClass = rule.claimed ? 'done' : (rule.claimable ? 'ready' : '');
     const pillText = rule.claimed ? '已领取' : (rule.claimable ? `可领 ${rule.amount} 次` : `${rule.progress}/${rule.target}`);
     return `
-      <article class="rule-card">
+      <article class="rule-card ${rule.claimable ? 'clickable' : ''}" data-rule-key="${escapeHtml(rule.key)}">
         <div>
           <h3>${escapeHtml(rule.title)}</h3>
           <p>${escapeHtml(rule.description)}</p>
@@ -213,6 +223,50 @@ function renderRules(rules) {
       </article>
     `;
   }).join('');
+}
+
+function bindRuleCards() {
+  els.rulesList.querySelectorAll('.rule-card.clickable').forEach(card => {
+    card.addEventListener('click', claimRules);
+  });
+}
+
+function renderClaimButtonState() {
+  if (!state.token) {
+    els.claimBtn.textContent = '扫码登录后领取';
+    els.claimBtn.disabled = true;
+    return;
+  }
+
+  const claimableCount = getClaimableRules().reduce((sum, rule) => sum + Number(rule.amount || 0), 0);
+  els.claimBtn.disabled = false;
+  els.claimBtn.textContent = claimableCount > 0
+    ? `领取 ${claimableCount} 次机会`
+    : '查看领取条件';
+}
+
+function getClaimableRules() {
+  return (state.me?.rules || []).filter(rule => rule.claimable);
+}
+
+function showNoClaimableHint() {
+  const rules = state.me?.rules || [];
+  const nextRule = rules.find(rule => !rule.claimed) || rules[rules.length - 1];
+  if (!nextRule) {
+    showMessage('暂无可领取机会', '当前活动暂时没有配置可领取任务。');
+    return;
+  }
+
+  if (nextRule.claimed) {
+    showMessage('机会已领取完', '当前已达成的任务都领取过了，继续签到或邀请好友可获得后续机会。');
+    return;
+  }
+
+  const missing = Math.max(Number(nextRule.target || 0) - Number(nextRule.progress || 0), 0);
+  showMessage(
+    '还没有可领取机会',
+    `${nextRule.title}：当前进度 ${nextRule.progress}/${nextRule.target}，还差 ${missing}。`
+  );
 }
 
 function renderPrizes(prizes) {
@@ -233,7 +287,7 @@ function renderHistory(history) {
         <strong>${escapeHtml(item.prize_name)}</strong>
         <span>${formatDateTime(item.created_at)}</span>
       </div>
-      <strong>${item.points > 0 ? `+${item.points} 积分` : '谢谢参与'}</strong>
+      <strong>${item.points > 0 ? `+${item.points} 积分` : '已记录'}</strong>
     </div>
   `).join('');
 }
@@ -243,7 +297,13 @@ function showResult(drawResult) {
   els.resultTitle.textContent = points > 0 ? `抽中 ${drawResult.prize_name}` : drawResult.prize_name;
   els.resultDesc.textContent = points > 0
     ? `${points} 积分已自动发放到你的账户。`
-    : '这次没有抽中积分，继续签到或邀请好友获取更多机会。';
+    : '抽奖结果已记录。';
+  els.resultModal.classList.remove('hidden');
+}
+
+function showMessage(title, description) {
+  els.resultTitle.textContent = title;
+  els.resultDesc.textContent = description;
   els.resultModal.classList.remove('hidden');
 }
 

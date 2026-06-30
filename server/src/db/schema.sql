@@ -204,6 +204,9 @@ INSERT INTO lottery_prizes (campaign_id, name, type, points, weight, stock, sort
   (1, '10 积分灵感包', 'points', 10, 5, NULL, 10, TRUE),
   (1, '5 积分补给', 'points', 5, 15, NULL, 20, TRUE),
   (1, '3 积分加油站', 'points', 3, 30, NULL, 30, TRUE),
-  (1, '1 积分小确幸', 'points', 1, 45, NULL, 40, TRUE),
-  (1, '谢谢参与', 'none', 0, 20, NULL, 50, TRUE)
+  (1, '1 积分小确幸', 'points', 1, 45, NULL, 40, TRUE)
 ON CONFLICT (campaign_id, name) DO NOTHING;
+
+UPDATE lottery_prizes
+SET enabled = FALSE
+WHERE campaign_id = 1 AND name = '谢谢参与';
