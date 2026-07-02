@@ -260,6 +260,49 @@ button.closed-action::after {
   font-weight: 900;
 }
 
+.review-gallery-list {
+  position: relative;
+  display: grid;
+  gap: 18rpx;
+  margin-top: 24rpx;
+}
+
+.review-gallery-item {
+  display: grid;
+  grid-template-columns: 156rpx 1fr;
+  gap: 18rpx;
+  align-items: center;
+  padding: 16rpx;
+  border-radius: 28rpx;
+  background: rgba(255, 253, 248, 0.86);
+  box-shadow: inset 0 0 0 1rpx rgba(96, 74, 44, 0.08);
+}
+
+.review-gallery-image {
+  width: 156rpx;
+  height: 118rpx;
+  border-radius: 22rpx;
+  background: #f0eadf;
+}
+
+.review-gallery-title,
+.review-gallery-desc {
+  display: block;
+}
+
+.review-gallery-title {
+  color: #30291b;
+  font-size: 28rpx;
+  font-weight: 900;
+}
+
+.review-gallery-desc {
+  margin-top: 8rpx;
+  color: #7f7058;
+  font-size: 23rpx;
+  line-height: 1.55;
+}
+
 .section-head {
   display: flex;
   align-items: center;

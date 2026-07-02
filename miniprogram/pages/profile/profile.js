@@ -23,13 +23,13 @@ Page({
     authorWechatCardLoaded: false,
     reviewMode: false,
     serviceAvailable: false,
-    communityMenuText: '加入梦倩绘境交流群',
-    communityMenuSub: '添加作者微信，进群领取积分福利，交流提示词和画面审美参考。',
+    communityMenuText: '查看作者名片',
+    communityMenuSub: '查看作者名片码，了解更多使用说明与积分补给方式。',
     communityBadgeText: '查看名片码',
-    communityTitle: '加入梦倩绘境交流群',
-    communityDesc: '添加作者微信，进群领取积分福利，交流提示词和画面审美参考。',
+    communityTitle: '查看作者名片',
+    communityDesc: '查看作者名片码，了解更多使用说明与积分补给方式。',
     inviteCode: '',
-    inviteRewardText: '好友通过你的链接首次注册成功后，你会获得邀请积分。',
+    inviteRewardText: '新用户首次进入并完成绑定后，可获得积分奖励。',
   },
 
   onShow() {
@@ -92,7 +92,7 @@ Page({
   },
 
   applyServiceMode(serviceAvailable) {
-    const enabled = serviceAvailable || this.data.reviewMode;
+    const enabled = this.data.reviewMode ? false : serviceAvailable;
     this.setData({
       serviceAvailable: enabled,
       showPointLogsPanel: enabled && this.data.showPoints,
@@ -135,7 +135,6 @@ Page({
   },
 
   goCheckin() {
-    if (!this.data.serviceAvailable) return;
     wx.navigateTo({ url: '/pages/checkin/checkin' });
   },
 
@@ -203,6 +202,12 @@ Page({
   },
 
   onShareAppMessage() {
+    if (this.data.reviewMode) {
+      return {
+        title: '梦倩绘境灵感手册',
+        path: '/pages/index/index',
+      };
+    }
     return {
       title: '梦倩绘境积分福利入口',
       path: withInvite('/pages/index/index'),
@@ -210,6 +215,12 @@ Page({
   },
 
   onShareTimeline() {
+    if (this.data.reviewMode) {
+      return {
+        title: '梦倩绘境灵感手册',
+        query: '',
+      };
+    }
     return {
       title: '梦倩绘境积分福利入口',
       query: inviteQuery(),

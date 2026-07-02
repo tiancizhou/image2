@@ -133,7 +133,7 @@ Page({
     const { item } = this.data;
     if (item && item.status === 'success') {
       return {
-        title: '我用梦倩绘境生成了一张图',
+        title: '梦倩绘境画面收藏',
         path: withInvite(`/pages/detail/detail?id=${item.id}&share=1`),
         imageUrl: item.share_image_url || item.image_url || '',
       };
@@ -147,7 +147,7 @@ Page({
   onShareTimeline() {
     const { item } = this.data;
     return {
-      title: item && item.status === 'success' ? '我用梦倩绘境生成了一张图' : '梦倩绘境：把灵感画成梦境',
+      title: item && item.status === 'success' ? '梦倩绘境画面收藏' : '梦倩绘境灵感手册',
       query: inviteQuery(item && item.status === 'success' ? `id=${item.id}&share=1` : ''),
       imageUrl: item?.share_image_url || item?.image_url || '',
     };

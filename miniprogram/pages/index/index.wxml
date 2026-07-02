@@ -20,9 +20,9 @@
   </view>
 
   <view wx:if="{{serviceChecked && !serviceAvailable}}" class="gallery-card">
-    <view class="gallery-badge">积分中心</view>
-    <text class="gallery-title">先把积分准备好</text>
-    <text class="gallery-desc">这里是积分福利入口。你可以签到、看广告、邀请好友或加入交流群领取更多积分。</text>
+    <view class="gallery-badge">灵感手册</view>
+    <text class="gallery-title">今日画面参考</text>
+    <text class="gallery-desc">这里整理配色、构图与氛围参考。你可以完成每日签到，或浏览下方主题积累个人灵感。</text>
     <view class="closed-actions">
       <view class="closed-action checkin" bindtap="onClosedCheckinTap">
         <text class="closed-action-icon">签</text>
@@ -38,21 +38,21 @@
           <text class="closed-action-desc">完整观看一次激励视频，到账 {{rewardAdPoints}} 积分</text>
         </view>
       </view>
-      <view class="closed-action community" bindtap="onClosedCommunityTap">
-        <text class="closed-action-icon">群</text>
+    </view>
+    <view class="review-gallery-list">
+      <view
+        wx:for="{{galleryItems}}"
+        wx:key="id"
+        class="review-gallery-item"
+        data-id="{{item.id}}"
+        bindtap="onGalleryItemTap"
+      >
+        <image class="review-gallery-image" src="{{item.image}}" mode="aspectFill" data-id="{{item.id}}" bindtap="onGalleryImageTap" />
         <view>
-          <text class="closed-action-title">{{communityTitle}}</text>
-          <text class="closed-action-desc">{{communityDesc}}</text>
-          <text class="closed-action-button">{{communityButtonText}}</text>
+          <text class="review-gallery-title">{{item.title}}</text>
+          <text class="review-gallery-desc">{{item.desc}}</text>
         </view>
       </view>
-      <button class="closed-action invite" open-type="share">
-        <text class="closed-action-icon">邀</text>
-        <view>
-          <text class="closed-action-title">邀请好友</text>
-          <text class="closed-action-desc">好友首次注册成功后，你可获得邀请积分</text>
-        </view>
-      </button>
     </view>
   </view>
 
@@ -146,7 +146,7 @@
   <view class="result-card" wx:if="{{resultImage}}">
     <view class="section-head">
       <text>{{resultLabel}}</text>
-      <text class="hint">长按图片可分享</text>
+      <text class="hint">点击图片可查看</text>
     </view>
     <image class="result-image" src="{{resultImage}}" mode="widthFix" show-menu-by-longpress />
     <button class="save-btn" bindtap="onSaveImage">保存到相册</button>

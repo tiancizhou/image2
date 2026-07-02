@@ -60,8 +60,8 @@ Page({
     reviewMode: false,
     serviceAvailable: false,
     serviceChecked: false,
-    communityTitle: '加入梦倩绘境交流群',
-    communityDesc: '添加作者微信，进群领取积分福利，交流提示词和画面审美参考。',
+    communityTitle: '查看作者名片',
+    communityDesc: '查看作者名片码，了解更多使用说明与积分补给方式。',
     communityButtonText: '查看名片码',
     communityImageUrl: '/static/author-wechat-card.jpg',
     showCommunityCard: false,
@@ -730,6 +730,12 @@ Page({
     });
   },
   onShareAppMessage() {
+    if (this.data.reviewMode) {
+      return {
+        title: '梦倩绘境灵感手册',
+        path: '/pages/index/index',
+      };
+    }
     return {
       title: '梦倩绘境积分福利入口',
       path: withInvite('/pages/index/index'),
@@ -737,6 +743,12 @@ Page({
   },
 
   onShareTimeline() {
+    if (this.data.reviewMode) {
+      return {
+        title: '梦倩绘境灵感手册',
+        query: '',
+      };
+    }
     return {
       title: '梦倩绘境积分福利入口',
       query: inviteQuery(),

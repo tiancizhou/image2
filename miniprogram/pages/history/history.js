@@ -371,6 +371,12 @@ Page({
     this.loadList().then(() => wx.stopPullDownRefresh());
   },
   onShareAppMessage() {
+    if (this.data.reviewMode) {
+      return {
+        title: '梦倩绘境灵感收藏',
+        path: '/pages/history/history',
+      };
+    }
     return {
       title: '梦倩绘境积分福利入口',
       path: withInvite('/pages/index/index'),
@@ -378,6 +384,12 @@ Page({
   },
 
   onShareTimeline() {
+    if (this.data.reviewMode) {
+      return {
+        title: '梦倩绘境灵感收藏',
+        query: '',
+      };
+    }
     return {
       title: '梦倩绘境积分福利入口',
       query: inviteQuery(),
