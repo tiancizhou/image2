@@ -116,12 +116,19 @@ Page({
     if (!this.data.reviewMode && this.data.serviceAvailable) this.consumeRemixDraft();
   },
 
-  resolveAssetUrl(url) {
+  withAssetVersion(url, version) {
+    if (!url || !version || url.startsWith('/static/')) return url;
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}v=${encodeURIComponent(version)}`;
+  },
+
+  resolveAssetUrl(url, version = '') {
     if (!url) return '';
-    if (/^https?:\/\//i.test(url)) return url;
+    const versionedUrl = this.withAssetVersion(url, version);
+    if (/^https?:\/\//i.test(versionedUrl)) return versionedUrl;
     if (url.startsWith('/static/')) return url;
-    if (url.startsWith('/')) return `${app.globalData.baseUrl}${url}`;
-    return url;
+    if (versionedUrl.startsWith('/')) return `${app.globalData.baseUrl}${versionedUrl}`;
+    return versionedUrl;
   },
 
   async loadPublicConfig() {
@@ -134,7 +141,7 @@ Page({
         communityTitle: community.title || this.data.communityTitle,
         communityDesc: community.desc || this.data.communityDesc,
         communityButtonText: community.buttonText || this.data.communityButtonText,
-        communityImageUrl: this.resolveAssetUrl(community.imageUrl || this.data.communityImageUrl),
+        communityImageUrl: this.resolveAssetUrl(community.imageUrl || this.data.communityImageUrl, community.imageVersion),
         communityImageLoaded: false,
       });
       this.preloadCommunityImage();

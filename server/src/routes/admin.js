@@ -252,7 +252,10 @@ router.post('/settings/upload', adminAuth, upload.single('image'), async (req, r
     fs.mkdirSync(config.uploadDir, { recursive: true });
     const target = path.join(config.uploadDir, filename);
     fs.renameSync(req.file.path, target);
-    res.json({ url: `/uploads/${filename}` });
+    const url = `/uploads/${filename}`;
+    await settingsService.set('community_image_url', url);
+    settingsService.clearCache();
+    res.json({ url });
   } catch (err) {
     if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     next(err);

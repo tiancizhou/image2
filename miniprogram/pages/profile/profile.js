@@ -39,12 +39,19 @@ Page({
     this.loadProfile();
   },
 
-  resolveAssetUrl(url) {
+  withAssetVersion(url, version) {
+    if (!url || !version || url.startsWith('/static/')) return url;
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}v=${encodeURIComponent(version)}`;
+  },
+
+  resolveAssetUrl(url, version = '') {
     if (!url) return '';
-    if (/^https?:\/\//i.test(url)) return url;
+    const versionedUrl = this.withAssetVersion(url, version);
+    if (/^https?:\/\//i.test(versionedUrl)) return versionedUrl;
     if (url.startsWith('/static/')) return url;
-    if (url.startsWith('/')) return `${app.globalData.baseUrl}${url}`;
-    return url;
+    if (versionedUrl.startsWith('/')) return `${app.globalData.baseUrl}${versionedUrl}`;
+    return versionedUrl;
   },
 
   async loadPublicConfig() {
@@ -58,7 +65,7 @@ Page({
         communityMenuText: community.title || this.data.communityMenuText,
         communityMenuSub: community.desc || this.data.communityMenuSub,
         communityBadgeText: community.buttonText || this.data.communityBadgeText,
-        authorWechatCard: this.resolveAssetUrl(community.imageUrl || this.data.authorWechatCard),
+        authorWechatCard: this.resolveAssetUrl(community.imageUrl || this.data.authorWechatCard, community.imageVersion),
         authorWechatCardLoaded: false,
       });
       this.preloadWechatCard();

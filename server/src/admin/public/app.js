@@ -457,7 +457,7 @@ function bindSettingsEvents() {
       if (!res.ok) throw new Error(data.error || '上传失败');
       document.getElementById('s-community_image_url').value = data.url;
       document.getElementById('community-image-preview').src = assetUrl(data.url);
-      toast('图片已上传，请保存系统策略');
+      toast('名片码已上传并保存');
     } catch (err) {
       toast(err.message, 'error');
     }

@@ -25,6 +25,7 @@ router.get('/public-config', async (req, res, next) => {
         desc: all.community_desc || '添加作者微信，进群领取积分福利，交流提示词和画面审美参考。',
         buttonText: all.community_button_text || '查看名片码',
         imageUrl: all.community_image_url || '/static/author-wechat-card.jpg',
+        imageVersion: all.community_image_url || '',
       },
     });
   } catch (err) {
