@@ -564,6 +564,7 @@ function pointType(type) {
     refund: '返还',
     invite: '邀请',
     lottery: '抽奖',
+    reward_ad: '广告奖励',
   };
   return map[type] || '积分';
 }

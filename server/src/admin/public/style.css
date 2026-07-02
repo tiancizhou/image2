@@ -297,6 +297,10 @@ nav a:hover {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.settings-grid .wide {
+  grid-column: 1 / -1;
+}
+
 .settings-grid.compact {
   gap: 8px 12px;
 }
@@ -356,6 +360,12 @@ nav a:hover {
   display: flex;
   justify-content: space-between;
   margin-bottom: 18px;
+}
+
+.card-header.sub-header {
+  border-top: 1px solid var(--line);
+  margin-top: 24px;
+  padding-top: 20px;
 }
 
 .card-header h3 {
@@ -497,8 +507,40 @@ dd {
   width: auto;
 }
 
+.review-toggle {
+  width: fit-content;
+  margin: 18px 0 4px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 204, 102, 0.28);
+  border-radius: 16px;
+  color: var(--warn);
+  background: rgba(255, 204, 102, 0.08);
+}
+
 .form-actions {
   margin-top: 20px;
+}
+
+.upload-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 18px 0 22px;
+}
+
+.upload-row input[type="file"] {
+  margin: 0;
+  max-width: 360px;
+}
+
+.settings-preview {
+  width: 88px;
+  height: 88px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 table {

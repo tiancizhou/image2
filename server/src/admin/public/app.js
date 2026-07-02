@@ -81,6 +81,13 @@ function settingNumber(settings, key, fallback) {
   return Number.isFinite(value) && value >= 0 ? value : fallback;
 }
 
+function assetUrl(path) {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  if (path.startsWith('/')) return `${window.location.origin}${path}`;
+  return path;
+}
+
 function toast(msg, type = 'success') {
   const el = document.createElement('div');
   el.className = `toast toast-${type}`;
@@ -273,6 +280,24 @@ async function renderSettings(el, seq) {
         <label>每日签到积分<input id="s-checkin_points" type="number" min="0" value="${escapeHtml(settings.checkin_points || 1)}"></label>
         <label>连续签到奖励 JSON<input id="s-checkin_consecutive_bonus" value="${escapeHtml(settings.checkin_consecutive_bonus || '{}')}"></label>
       </div>
+      <label class="toggle-row review-toggle"><input id="s-review_mode" type="checkbox" ${settings.review_mode === 'true' ? 'checked' : ''}> 开启审核模式</label>
+      <div class="card-header sub-header">
+        <div>
+          <h3>渠道关闭页入口</h3>
+          <p>用于小程序渠道关闭时展示的“加入交流群”入口。</p>
+        </div>
+      </div>
+      <div class="settings-grid">
+        <label>交流群标题<input id="s-community_title" value="${escapeHtml(settings.community_title || '加入梦倩绘境交流群')}"></label>
+        <label>按钮文案<input id="s-community_button_text" value="${escapeHtml(settings.community_button_text || '查看名片码')}"></label>
+        <label class="wide">交流群描述<input id="s-community_desc" value="${escapeHtml(settings.community_desc || '添加作者微信，进群领取积分福利，交流提示词和画面审美参考。')}"></label>
+        <label class="wide">名片码图片 URL<input id="s-community_image_url" value="${escapeHtml(settings.community_image_url || '/static/author-wechat-card.jpg')}"></label>
+      </div>
+      <div class="upload-row">
+        <input id="community-image-file" type="file" accept="image/*">
+        <button class="btn btn-secondary" id="upload-community-image" type="button">上传名片码</button>
+        <img class="settings-preview" id="community-image-preview" src="${escapeHtml(assetUrl(settings.community_image_url || '/static/author-wechat-card.jpg'))}" alt="名片码预览">
+      </div>
       <button class="btn btn-secondary" id="save-settings">保存系统策略</button>
     </section>`;
 
@@ -396,10 +421,40 @@ function bindSettingsEvents() {
           invite_reward_points: document.getElementById('s-invite_reward_points').value,
           checkin_points: document.getElementById('s-checkin_points').value,
           checkin_consecutive_bonus: bonus,
+          review_mode: document.getElementById('s-review_mode').checked ? 'true' : 'false',
+          community_title: document.getElementById('s-community_title').value,
+          community_desc: document.getElementById('s-community_desc').value,
+          community_button_text: document.getElementById('s-community_button_text').value,
+          community_image_url: document.getElementById('s-community_image_url').value,
         }),
       });
       toast('系统策略已保存');
       renderContent();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  };
+
+  document.getElementById('upload-community-image').onclick = async () => {
+    const fileInput = document.getElementById('community-image-file');
+    const file = fileInput.files?.[0];
+    if (!file) {
+      toast('请先选择图片', 'error');
+      return;
+    }
+    const form = new FormData();
+    form.append('image', file);
+    try {
+      const res = await fetch(`${API}/settings/upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '上传失败');
+      document.getElementById('s-community_image_url').value = data.url;
+      document.getElementById('community-image-preview').src = assetUrl(data.url);
+      toast('图片已上传，请保存系统策略');
     } catch (err) {
       toast(err.message, 'error');
     }

@@ -85,4 +85,57 @@ async function getLogs(userId, page = 1, pageSize = 20) {
   return { list: rows, total: parseInt(count), page, pageSize };
 }
 
-module.exports = { getUserPoints, consume, add, getLogs };
+async function rewardAd(userId, amount = 2) {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    const { rows: recentClaims } = await client.query(
+      `SELECT id FROM reward_ad_claims
+       WHERE user_id = $1 AND created_at > NOW() - INTERVAL '60 seconds'
+       LIMIT 1`,
+      [userId]
+    );
+    if (recentClaims.length > 0) {
+      const err = new Error('广告奖励领取太频繁，请稍后再试');
+      err.status = 429;
+      throw err;
+    }
+
+    const { rows } = await client.query(
+      'SELECT points FROM users WHERE id = $1 FOR UPDATE',
+      [userId]
+    );
+    if (rows.length === 0) {
+      const err = new Error('用户不存在');
+      err.status = 404;
+      throw err;
+    }
+
+    const balanceAfter = rows[0].points + amount;
+    await client.query(
+      'UPDATE users SET points = $1 WHERE id = $2',
+      [balanceAfter, userId]
+    );
+    await client.query(
+      `INSERT INTO reward_ad_claims (user_id, points_earned)
+       VALUES ($1, $2)`,
+      [userId, amount]
+    );
+    await client.query(
+      `INSERT INTO point_logs (user_id, type, amount, balance_after, remark)
+       VALUES ($1, 'reward_ad', $2, $3, $4)`,
+      [userId, amount, balanceAfter, '观看激励视频奖励']
+    );
+
+    await client.query('COMMIT');
+    return { points: amount, balanceAfter };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { getUserPoints, consume, add, getLogs, rewardAd };

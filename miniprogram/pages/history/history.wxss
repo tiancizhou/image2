@@ -17,6 +17,18 @@
   box-shadow: 0 20rpx 54rpx rgba(92, 71, 41, 0.08);
 }
 
+.history-loading {
+  margin: 22rpx 6rpx;
+  padding: 70rpx 24rpx;
+  border-radius: 36rpx;
+  color: #5f8b39;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 20rpx 54rpx rgba(92, 71, 41, 0.08);
+  font-size: 26rpx;
+  font-weight: 800;
+  text-align: center;
+}
+
 .gallery-history::after {
   content: '';
   position: absolute;

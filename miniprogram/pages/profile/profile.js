@@ -20,6 +20,7 @@ Page({
     showCommunity: false,
     showPointLogsPanel: false,
     authorWechatCard: AUTHOR_WECHAT_CARD,
+    reviewMode: false,
     serviceAvailable: false,
     communityMenuText: '联系作者',
     communityMenuSub: '添加作者微信，交流画面灵感',
@@ -31,9 +32,34 @@ Page({
   },
 
   onShow() {
+    this.loadPublicConfig();
     this.loadServiceAvailability();
     this.renderCachedProfile();
     this.loadProfile();
+  },
+
+  resolveAssetUrl(url) {
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('/static/')) return url;
+    if (url.startsWith('/')) return `${app.globalData.baseUrl}${url}`;
+    return url;
+  },
+
+  async loadPublicConfig() {
+    try {
+      const data = await request('/api/user/public-config', { auth: false });
+      const community = data.community || {};
+      this.setData({
+        reviewMode: data.reviewMode === true,
+        communityTitle: community.title || this.data.communityTitle,
+        communityDesc: community.desc || this.data.communityDesc,
+        communityMenuText: community.title || this.data.communityMenuText,
+        communityMenuSub: community.desc || this.data.communityMenuSub,
+        communityBadgeText: community.buttonText || this.data.communityBadgeText,
+        authorWechatCard: this.resolveAssetUrl(community.imageUrl || this.data.authorWechatCard),
+      });
+    } catch {}
   },
 
   async loadServiceAvailability() {
@@ -46,16 +72,10 @@ Page({
   },
 
   applyServiceMode(serviceAvailable) {
+    const enabled = serviceAvailable || this.data.reviewMode;
     this.setData({
-      serviceAvailable,
-      showPointLogsPanel: serviceAvailable && this.data.showPoints,
-      communityMenuText: serviceAvailable ? '加交流群领积分' : '联系作者',
-      communityMenuSub: serviceAvailable ? '添加作者微信，进群领取福利' : '添加作者微信，交流画面灵感',
-      communityBadgeText: serviceAvailable ? '福利' : '名片码',
-      communityTitle: serviceAvailable ? '加入梦倩绘境交流群' : '联系梦倩绘境作者',
-      communityDesc: serviceAvailable
-        ? '长按或保存下方微信名片码，添加作者微信后备注「梦倩绘境」，进群领取积分和交流提示词。'
-        : '长按或保存下方微信名片码，添加作者微信后备注「梦倩绘境」，一起交流画面灵感与审美参考。',
+      serviceAvailable: enabled,
+      showPointLogsPanel: enabled && this.data.showPoints,
     });
   },
 
@@ -133,6 +153,8 @@ Page({
       cdk: '兑换',
       refund: '返还',
       invite: '邀请',
+      reward_ad: '广告奖励',
+      lottery: '抽奖',
     };
     return map[type] || '积分';
   },
@@ -154,14 +176,14 @@ Page({
 
   onShareAppMessage() {
     return {
-      title: '我在用梦倩绘境生成图片，送你一个创作入口',
+      title: '梦倩绘境积分福利入口',
       path: withInvite('/pages/index/index'),
     };
   },
 
   onShareTimeline() {
     return {
-      title: '梦倩绘境：把灵感画成梦境',
+      title: '梦倩绘境积分福利入口',
       query: inviteQuery(),
     };
   },

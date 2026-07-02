@@ -5,8 +5,26 @@ const pointsService = require('../services/points');
 const cdkService = require('../services/cdk');
 const checkinService = require('../services/checkin');
 const invitations = require('../services/invitations');
+const settingsService = require('../services/settings');
 
 const router = express.Router();
+
+router.get('/public-config', async (req, res, next) => {
+  try {
+    const all = await settingsService.getAll();
+    res.json({
+      reviewMode: all.review_mode === 'true',
+      community: {
+        title: all.community_title || '加入梦倩绘境交流群',
+        desc: all.community_desc || '添加作者微信，进群领取积分福利，交流提示词和画面审美参考。',
+        buttonText: all.community_button_text || '查看名片码',
+        imageUrl: all.community_image_url || '/static/author-wechat-card.jpg',
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.get('/profile', auth, async (req, res, next) => {
   try {
@@ -64,6 +82,15 @@ router.post('/cdk/redeem', auth, async (req, res, next) => {
 router.post('/checkin', auth, async (req, res, next) => {
   try {
     const result = await checkinService.checkin(req.userId);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/reward-ad', auth, async (req, res, next) => {
+  try {
+    const result = await pointsService.rewardAd(req.userId, 2);
     res.json(result);
   } catch (err) {
     next(err);

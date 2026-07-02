@@ -2,6 +2,12 @@ const { request, uploadFile, ensureLogin, clearLogin } = require('../../utils/ap
 const { withInvite, inviteQuery } = require('../../utils/invite');
 const app = getApp();
 
+const REWARDED_AD_UNIT_ID = 'adunit-7c1171d810b25c91';
+
+let videoAd = null;
+let videoAdReady = false;
+let videoAdRewardResolver = null;
+
 Page({
   data: {
     mode: 'generate',
@@ -34,6 +40,7 @@ Page({
     checkinPromptChecked: false,
     checkinConsecutive: 0,
     quickCheckinRewardText: '每日签到可领取积分',
+    rewardAdLoading: false,
     showTaskModal: false,
     taskAccepted: false,
     taskSubmittingText: '正在提交创作任务...',
@@ -48,8 +55,13 @@ Page({
       '3840x2160': 4,
     },
     userPoints: 0,
+    reviewMode: false,
     serviceAvailable: false,
     serviceChecked: false,
+    communityTitle: '加入梦倩绘境交流群',
+    communityDesc: '添加作者微信，进群领取积分福利，交流提示词和画面审美参考。',
+    communityButtonText: '查看名片码',
+    communityImageUrl: '/static/author-wechat-card.jpg',
     previewVisible: false,
     previewItem: null,
     galleryItems: [
@@ -84,29 +96,60 @@ Page({
     ],
   },
 
-  onLoad() {
+  async onLoad() {
+    this.initRewardedVideoAd();
+    await this.loadPublicConfig();
     this.loadServiceAvailability();
-    this.loadPricing();
+    if (!this.data.reviewMode) this.loadPricing();
     this.loadUserPoints();
   },
 
-  onShow() {
+  async onShow() {
+    await this.loadPublicConfig();
     this.loadServiceAvailability();
-    this.loadPricing();
+    if (!this.data.reviewMode) this.loadPricing();
     this.loadUserPoints();
-    if (this.data.serviceAvailable) this.consumeRemixDraft();
+    if (!this.data.reviewMode && this.data.serviceAvailable) this.consumeRemixDraft();
+  },
+
+  resolveAssetUrl(url) {
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('/static/')) return url;
+    if (url.startsWith('/')) return `${app.globalData.baseUrl}${url}`;
+    return url;
+  },
+
+  async loadPublicConfig() {
+    try {
+      const data = await request('/api/user/public-config', { auth: false });
+      const community = data.community || {};
+      this.setData({
+        reviewMode: data.reviewMode === true,
+        communityTitle: community.title || this.data.communityTitle,
+        communityDesc: community.desc || this.data.communityDesc,
+        communityButtonText: community.buttonText || this.data.communityButtonText,
+        communityImageUrl: this.resolveAssetUrl(community.imageUrl || this.data.communityImageUrl),
+      });
+    } catch {}
   },
 
   async loadServiceAvailability() {
+    if (this.data.reviewMode) {
+      this.setData({ serviceAvailable: false, serviceChecked: true });
+      this.maybeShowQuickCheckin();
+      return;
+    }
     try {
       const data = await request('/api/images/availability', { auth: false });
       this.setData({
         serviceAvailable: data.available !== false,
         serviceChecked: true,
       });
-      if (data.available !== false) this.maybeShowQuickCheckin();
+      this.maybeShowQuickCheckin();
     } catch (err) {
       this.setData({ serviceAvailable: false, serviceChecked: true });
+      this.maybeShowQuickCheckin();
     }
   },
 
@@ -140,7 +183,7 @@ Page({
   },
 
   async maybeShowQuickCheckin() {
-    if (!this.data.serviceAvailable || this.data.checkinPromptChecking || this.data.checkinPromptChecked) return;
+    if (this.data.checkinPromptChecking || this.data.checkinPromptChecked) return;
     const dismissKey = `quick_checkin_dismissed_${this.todayKey()}`;
     if (wx.getStorageSync(dismissKey)) {
       this.setData({ checkinPromptChecked: true });
@@ -193,6 +236,91 @@ Page({
         this.setData({ showQuickCheckin: false });
       }
     }
+  },
+
+  initRewardedVideoAd() {
+    if (!wx.createRewardedVideoAd || videoAd) return;
+    videoAd = wx.createRewardedVideoAd({ adUnitId: REWARDED_AD_UNIT_ID });
+    videoAd.onLoad(() => {
+      videoAdReady = true;
+    });
+    videoAd.onError((err) => {
+      videoAdReady = false;
+      console.error('激励视频广告加载失败', err);
+      if (videoAdRewardResolver) {
+        videoAdRewardResolver.reject(new Error('广告加载失败，请稍后再试'));
+        videoAdRewardResolver = null;
+      }
+    });
+    videoAd.onClose((res) => {
+      if (!videoAdRewardResolver) return;
+      const resolver = videoAdRewardResolver;
+      videoAdRewardResolver = null;
+      if (!res || res.isEnded) {
+        resolver.resolve();
+      } else {
+        resolver.reject(new Error('需要完整观看广告后才能获得积分'));
+      }
+    });
+  },
+
+  showRewardedVideoAd() {
+    return new Promise((resolve, reject) => {
+      if (!wx.createRewardedVideoAd) {
+        reject(new Error('当前微信版本暂不支持激励视频广告'));
+        return;
+      }
+      this.initRewardedVideoAd();
+      if (!videoAd) {
+        reject(new Error('广告组件初始化失败'));
+        return;
+      }
+      videoAdRewardResolver = { resolve, reject };
+      videoAd.show().catch(() => videoAd.load().then(() => videoAd.show())).catch((err) => {
+        videoAdRewardResolver = null;
+        videoAdReady = false;
+        console.error('激励视频广告显示失败', err);
+        reject(new Error('广告显示失败，请稍后再试'));
+      });
+    });
+  },
+
+  async claimRewardAdPoints() {
+    if (this.data.rewardAdLoading) return;
+    this.setData({ rewardAdLoading: true });
+    await ensureLogin();
+    try {
+      await this.showRewardedVideoAd();
+      const result = await request('/api/user/reward-ad', { method: 'POST' });
+      const points = result.points || 2;
+      wx.showToast({ title: `已获得 ${points} 积分`, icon: 'none' });
+      this.setData({ userPoints: result.balanceAfter, rewardAdLoading: false });
+      this.loadUserPoints();
+    } catch (err) {
+      this.setData({ rewardAdLoading: false });
+      throw err;
+    }
+  },
+
+  promptRewardAdForPoints() {
+    if (this.data.rewardAdLoading) return;
+    const insufficient = this.data.userPoints < this.data.pointsCost;
+    wx.showModal({
+      title: insufficient ? '积分不足' : '领取更多积分',
+      content: insufficient
+        ? `当前积分不足，本次需要 ${this.data.pointsCost} 积分。完整观看一次广告可获得 2 积分。`
+        : '完整观看一次广告可获得 2 积分，可用于后续使用。',
+      cancelText: '稍后再说',
+      confirmText: '看广告',
+      success: async (res) => {
+        if (!res.confirm) return;
+        try {
+          await this.claimRewardAdPoints();
+        } catch (err) {
+          wx.showToast({ title: err.message || '领取失败', icon: 'none' });
+        }
+      },
+    });
   },
 
   async loadPricing() {
@@ -368,6 +496,34 @@ Page({
     });
   },
 
+  onClosedCheckinTap() {
+    this.onQuickCheckin();
+  },
+
+  onClosedRewardAdTap() {
+    this.promptRewardAdForPoints();
+  },
+
+  onClosedCommunityTap() {
+    const imageUrl = this.data.communityImageUrl;
+    if (!imageUrl) {
+      wx.showToast({ title: '暂未配置名片码', icon: 'none' });
+      return;
+    }
+    wx.previewImage({
+      current: imageUrl,
+      urls: [imageUrl],
+    });
+  },
+
+  onClosedInviteTap() {
+    wx.showShareMenu({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+    });
+    wx.showToast({ title: '请点击右上角分享给好友', icon: 'none' });
+  },
+
   showGalleryHint(e) {
     const id = e.currentTarget.dataset.id;
     const item = this.data.galleryItems.find(option => option.id === id);
@@ -396,7 +552,7 @@ Page({
       return;
     }
     if (userPoints < pointsCost) {
-      wx.showToast({ title: '积分不足', icon: 'none' });
+      this.promptRewardAdForPoints();
       return;
     }
 
@@ -531,14 +687,14 @@ Page({
   },
   onShareAppMessage() {
     return {
-      title: '梦倩绘境：把灵感画成梦境',
+      title: '梦倩绘境积分福利入口',
       path: withInvite('/pages/index/index'),
     };
   },
 
   onShareTimeline() {
     return {
-      title: '梦倩绘境：把灵感画成梦境',
+      title: '梦倩绘境积分福利入口',
       query: inviteQuery(),
     };
   },

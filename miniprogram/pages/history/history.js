@@ -34,7 +34,9 @@ Page({
     loading: false,
     baseUrl: '',
     polling: false,
+    reviewMode: false,
     serviceAvailable: false,
+    serviceChecked: false,
     showPollingTip: false,
     showHistoryGrid: false,
     showEmptyState: false,
@@ -75,11 +77,37 @@ Page({
     this.loadServiceAvailability();
   },
 
+  async loadReviewMode() {
+    try {
+      const data = await request('/api/user/public-config', { auth: false });
+      this.setData({ reviewMode: data.reviewMode === true });
+      return data.reviewMode === true;
+    } catch {
+      return false;
+    }
+  },
+
   async loadServiceAvailability() {
     try {
+      const reviewMode = await this.loadReviewMode();
+      if (reviewMode) {
+        this.setData({
+          serviceAvailable: false,
+          serviceChecked: true,
+          list: [],
+          page: 1,
+          hasMore: false,
+          loading: false,
+          showHistoryGrid: false,
+          showEmptyState: false,
+          showLoadMore: false,
+        });
+        this.stopPolling();
+        return;
+      }
       const data = await request('/api/images/availability', { auth: false });
       const serviceAvailable = data.available !== false;
-      this.setData({ serviceAvailable });
+      this.setData({ serviceAvailable, serviceChecked: true });
       if (!serviceAvailable) {
         this.stopPolling();
         this.setData({
@@ -97,6 +125,7 @@ Page({
     } catch {
       this.setData({
         serviceAvailable: false,
+        serviceChecked: true,
         list: [],
         page: 1,
         hasMore: false,
@@ -343,14 +372,14 @@ Page({
   },
   onShareAppMessage() {
     return {
-      title: '梦倩绘境：把灵感画成梦境',
+      title: '梦倩绘境积分福利入口',
       path: withInvite('/pages/index/index'),
     };
   },
 
   onShareTimeline() {
     return {
-      title: '梦倩绘境：把灵感画成梦境',
+      title: '梦倩绘境积分福利入口',
       query: inviteQuery(),
     };
   },

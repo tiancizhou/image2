@@ -1,4 +1,7 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const adminAuth = require('../middleware/admin-auth');
@@ -11,6 +14,7 @@ const channelsService = require('../services/channels');
 const imageStorage = require('../services/image-storage');
 
 const router = express.Router();
+const upload = multer({ dest: 'uploads/tmp/' });
 
 function pageSize(queryValue, fallback = 20, max = 50) {
   const value = parseInt(queryValue, 10) || fallback;
@@ -221,6 +225,11 @@ router.put('/settings', adminAuth, async (req, res, next) => {
       'invite_reward_points',
       'checkin_points',
       'checkin_consecutive_bonus',
+      'review_mode',
+      'community_title',
+      'community_desc',
+      'community_button_text',
+      'community_image_url',
     ];
     for (const [key, value] of Object.entries(req.body)) {
       if (allowed.includes(key)) {
@@ -230,6 +239,21 @@ router.put('/settings', adminAuth, async (req, res, next) => {
     settingsService.clearCache();
     res.json({ success: true });
   } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/settings/upload', adminAuth, upload.single('image'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: '请上传图片' });
+    const ext = path.extname(req.file.originalname || '.png') || '.png';
+    const filename = `${Date.now()}-community-${Math.random().toString(36).slice(2, 8)}${ext}`;
+    fs.mkdirSync(config.uploadDir, { recursive: true });
+    const target = path.join(config.uploadDir, filename);
+    fs.renameSync(req.file.path, target);
+    res.json({ url: `/uploads/${filename}` });
+  } catch (err) {
+    if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     next(err);
   }
 });

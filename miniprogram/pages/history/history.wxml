@@ -1,5 +1,9 @@
 <view class="page">
-  <view class="gallery-history" wx:if="{{!serviceAvailable}}">
+  <view class="history-loading" wx:if="{{!serviceChecked}}">
+    <text>正在加载页面...</text>
+  </view>
+
+  <view class="gallery-history" wx:if="{{serviceChecked && (!serviceAvailable || reviewMode)}}">
     <view class="gallery-mark">梦</view>
     <text class="gallery-title">灵感收藏</text>
     <text class="gallery-desc">这里整理适合收藏的画面关键词、配色方向与构图提示。你可以从下方主题开始浏览，逐步建立自己的画面参考库。</text>
