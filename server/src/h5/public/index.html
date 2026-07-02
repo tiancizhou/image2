@@ -3,132 +3,147 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>梦倩绘境 | H5 创作台</title>
+  <title>梦倩绘境</title>
   <link rel="stylesheet" href="/h5/style.css">
 </head>
 <body>
-  <main class="app">
-    <section class="hero-card">
-      <div class="hero-glow"></div>
-      <span class="kicker">梦倩绘境</span>
-      <h1>梦境画面灵感手册</h1>
-      <p>小程序审核期间，也可以在这里继续创作和查看历史。</p>
-      <div class="balance-row">
-        <span>当前积分</span>
-        <strong id="userPoints">--</strong>
-      </div>
-    </section>
+  <main class="page-shell">
+    <section id="createView" class="page">
+      <section class="hero-card">
+        <div class="hero-glow"></div>
+        <span class="kicker">梦倩绘境</span>
+        <span class="hero-title">梦境画面灵感手册</span>
+        <span class="hero-subtitle">收集配色、构图与画面氛围，整理属于你的梦中画境。</span>
+        <div class="balance-row">
+          <span>当前积分</span>
+          <span id="userPoints">--</span>
+        </div>
+      </section>
 
-    <section id="authPanel" class="auth-panel">
-      <div>
-        <span class="panel-badge">微信账号同步</span>
-        <h2>扫码登录后继续使用</h2>
-        <p>使用微信扫描小程序码确认登录，积分、历史和小程序保持一致。</p>
-      </div>
-      <div class="qr-wrap">
-        <img id="qrImage" alt="小程序登录码">
-        <span id="qrStatus">正在生成小程序码...</span>
-      </div>
-      <button id="newQrBtn" class="secondary-btn" type="button">刷新登录码</button>
-    </section>
+      <section id="authPanel" class="auth-card">
+        <span class="gallery-badge">微信账号同步</span>
+        <span class="gallery-title">扫码登录后继续创作</span>
+        <span class="gallery-desc">使用微信扫描小程序码确认登录，积分、历史和小程序保持一致。</span>
+        <div class="qr-box">
+          <img id="qrImage" alt="小程序登录码">
+          <span id="qrStatus">正在生成小程序码...</span>
+        </div>
+        <button id="newQrBtn" class="create-btn" type="button">刷新登录码</button>
+      </section>
 
-    <section id="createView" class="view">
-      <div class="mode-switch">
+      <section id="modeSwitch" class="mode-switch hidden">
         <button class="mode-item active" data-mode="text2img" type="button">
-          <strong>文生图</strong>
-          <span>从提示词开始</span>
+          <span class="mode-title">文生图</span>
+          <span class="mode-desc">从提示词开始</span>
         </button>
         <button class="mode-item" data-mode="img2img" type="button">
-          <strong>图生图</strong>
-          <span>上传参考图生成</span>
+          <span class="mode-title">图生图</span>
+          <span class="mode-desc">上传参考图生成</span>
         </button>
-      </div>
+      </section>
 
-      <form id="createForm" class="studio-card">
-        <div id="uploadPanel" class="source-panel hidden">
+      <form id="createForm" class="studio-card hidden">
+        <section id="uploadPanel" class="source-panel hidden">
           <div class="section-head">
-            <strong>参考图片</strong>
-            <span id="fileCount">最多 4 张</span>
+            <span>参考图片</span>
+            <span id="fileCount" class="hint">最多 4 张</span>
           </div>
           <label class="upload-area">
             <input id="imageInput" type="file" accept="image/*" multiple>
-            <span class="upload-icon">+</span>
-            <strong>上传参考图</strong>
-            <em id="fileName">支持相册图片，最多 4 张</em>
+            <div id="uploadPlaceholder" class="upload-placeholder">
+              <span class="upload-icon">+</span>
+              <span class="upload-text">上传参考图</span>
+              <span id="fileName" class="upload-hint">最多 4 张，支持相册或拍照</span>
+            </div>
           </label>
-        </div>
+        </section>
 
         <div class="section-head">
-          <strong id="promptLabel">画面描述</strong>
-          <span id="promptCount">0/2000</span>
+          <span id="promptLabel">画面描述</span>
+          <span id="promptCount" class="hint">0/2000</span>
         </div>
-        <textarea id="promptInput" maxlength="2000" placeholder="例如：一只漂浮在太空里的猫，电影感打光，超细节..."></textarea>
+        <textarea id="promptInput" class="input-area" maxlength="2000" placeholder="例如：一只漂浮在太空里的猫，电影感打光，超细节..."></textarea>
 
         <div class="section-head size-head">
-          <strong>输出尺寸</strong>
-          <span>消耗 <b id="currentCost">1</b> 积分</span>
+          <span>输出尺寸</span>
+          <span class="hint">消耗 <b id="currentCost">1</b> 积分</span>
         </div>
-        <select id="sizeSelect"></select>
+        <select id="sizeSelect" class="size-select"></select>
 
         <div class="info-bar">
-          <span>本次预计消耗 <b id="costInline">1</b> 积分</span>
-          <span>剩余 <b id="pointsInline">--</b> 积分</span>
+          <span class="points-info">本次预计消耗 <b id="costInline">1</b> 积分</span>
+          <span class="points-left">剩余 <b id="pointsInline">--</b> 积分</span>
         </div>
 
         <button id="submitBtn" class="create-btn" type="submit">开始生成</button>
       </form>
 
-      <section id="taskPanel" class="task-card hidden">
-        <span class="panel-badge">TASK ACCEPTED</span>
-        <h2>创作任务已进入队列</h2>
-        <p id="taskText">完成后会出现在历史列表。</p>
-        <button class="secondary-btn" id="goHistoryBtn" type="button">去历史查看</button>
-      </section>
-    </section>
-
-    <section id="historyView" class="view hidden">
-      <div class="section-head page-title">
-        <div>
-          <span class="panel-badge">HISTORY</span>
-          <strong>最近 3 天创作</strong>
-        </div>
-        <button id="refreshHistoryBtn" class="text-btn" type="button">刷新</button>
-      </div>
-      <div id="historyList" class="history-list"></div>
-      <button id="loadMoreBtn" class="secondary-btn hidden" type="button">加载更多</button>
-    </section>
-
-    <section id="profileView" class="view hidden">
-      <section class="profile-card">
-        <div class="avatar">梦</div>
-        <h2 id="userName">绘境用户</h2>
-        <p id="userCode">扫码登录后显示账户</p>
-        <strong><span id="accountPoints">--</span> 积分</strong>
-      </section>
-
-      <section class="action-list">
-        <button id="checkinBtn" type="button" class="action-row">
-          <span class="action-icon">签</span>
-          <span><strong>每日签到</strong><em>领取今日积分</em></span>
-        </button>
-        <form id="cdkForm" class="cdk-card">
-          <label>兑换码</label>
-          <div>
-            <input id="cdkInput" placeholder="输入 CDK">
-            <button type="submit">兑换</button>
+      <section id="taskPanel" class="task-mask hidden">
+        <div class="task-modal">
+          <div class="task-orbit"><div class="task-dot"></div></div>
+          <span class="task-kicker">TASK ACCEPTED</span>
+          <span class="task-title">创作任务已进入队列</span>
+          <span id="taskText" class="task-desc">完成后会出现在历史列表。</span>
+          <div class="task-actions">
+            <button class="task-btn secondary" id="closeTaskBtn" type="button">继续创作</button>
+            <button class="task-btn primary" id="goHistoryBtn" type="button">去历史查看</button>
           </div>
+        </div>
+      </section>
+    </section>
+
+    <section id="historyView" class="page history-page hidden">
+      <div class="polling-tip hidden" id="pollingTip">
+        <span>有任务生成中，正在自动刷新...</span>
+      </div>
+      <section id="historyList" class="history-grid"></section>
+      <section id="emptyHistory" class="empty-state hidden">
+        <span class="empty-icon">画</span>
+        <span>还没有生成记录哦~</span>
+      </section>
+      <div class="load-more">
+        <button id="loadMoreBtn" class="load-more-text hidden" type="button">加载更多</button>
+      </div>
+    </section>
+
+    <section id="profileView" class="page profile-page hidden">
+      <section class="profile-header card">
+        <div class="avatar-fallback"><span>梦</span></div>
+        <span id="userName" class="nickname">绘境用户</span>
+        <span id="userCode" class="user-code">扫码登录后显示账户</span>
+        <div class="points-badge">
+          <span id="accountPoints" class="points-num">--</span>
+          <span class="points-label">积分</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <button id="checkinBtn" class="menu-item" type="button">
+          <span class="menu-icon mint-icon">签</span>
+          <span class="menu-text">每日签到</span>
+          <span id="checkinBadge" class="menu-badge">签到领积分</span>
+        </button>
+        <form id="cdkForm" class="menu-item cdk-row">
+          <span class="menu-icon gift-icon">兑</span>
+          <div class="menu-main">
+            <span class="menu-text">兑换码</span>
+            <input id="cdkInput" class="cdk-input" placeholder="输入 CDK">
+          </div>
+          <button class="menu-badge community" type="submit">兑换</button>
         </form>
-        <button id="logoutBtn" type="button" class="action-row muted">
-          <span class="action-icon">退</span>
-          <span><strong>退出登录</strong><em>切换其他微信账户</em></span>
+        <button id="pointsToggleBtn" class="menu-item" type="button">
+          <span class="menu-icon point-icon">积</span>
+          <span class="menu-text">积分记录</span>
+          <span class="menu-badge community">查看</span>
+        </button>
+        <button id="logoutBtn" class="menu-item" type="button">
+          <span class="menu-icon dark-icon">退</span>
+          <span class="menu-text">退出登录</span>
         </button>
       </section>
 
-      <section class="points-card">
-        <div class="section-head">
-          <strong>积分变动</strong>
-          <button id="refreshPointsBtn" class="text-btn" type="button">刷新</button>
-        </div>
+      <section id="pointsPanel" class="card hidden">
+        <span class="section-title-inner">积分变动</span>
         <div id="pointsList"></div>
       </section>
     </section>
@@ -140,9 +155,9 @@
     <button class="tab" data-view="profile" type="button">我的</button>
   </nav>
 
-  <section id="detailSheet" class="sheet hidden">
-    <div class="sheet-mask" data-close="detail"></div>
-    <article class="sheet-panel">
+  <section id="detailSheet" class="detail-sheet hidden">
+    <div class="detail-mask" data-close="detail"></div>
+    <article class="detail-panel">
       <button class="sheet-close" data-close="detail" type="button">关闭</button>
       <div id="detailBody"></div>
     </article>

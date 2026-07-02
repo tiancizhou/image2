@@ -25,7 +25,9 @@ const els = {
   newQrBtn: document.getElementById('newQrBtn'),
   createForm: document.getElementById('createForm'),
   modeBtns: document.querySelectorAll('.mode-item'),
+  modeSwitch: document.getElementById('modeSwitch'),
   uploadPanel: document.getElementById('uploadPanel'),
+  uploadPlaceholder: document.getElementById('uploadPlaceholder'),
   imageInput: document.getElementById('imageInput'),
   fileName: document.getElementById('fileName'),
   fileCount: document.getElementById('fileCount'),
@@ -39,6 +41,7 @@ const els = {
   submitBtn: document.getElementById('submitBtn'),
   taskPanel: document.getElementById('taskPanel'),
   taskText: document.getElementById('taskText'),
+  closeTaskBtn: document.getElementById('closeTaskBtn'),
   goHistoryBtn: document.getElementById('goHistoryBtn'),
   tabs: document.querySelectorAll('.tab'),
   views: {
@@ -52,14 +55,16 @@ const els = {
   userName: document.getElementById('userName'),
   userCode: document.getElementById('userCode'),
   historyList: document.getElementById('historyList'),
-  refreshHistoryBtn: document.getElementById('refreshHistoryBtn'),
+  emptyHistory: document.getElementById('emptyHistory'),
+  pollingTip: document.getElementById('pollingTip'),
   loadMoreBtn: document.getElementById('loadMoreBtn'),
   checkinBtn: document.getElementById('checkinBtn'),
   cdkForm: document.getElementById('cdkForm'),
   cdkInput: document.getElementById('cdkInput'),
   logoutBtn: document.getElementById('logoutBtn'),
   pointsList: document.getElementById('pointsList'),
-  refreshPointsBtn: document.getElementById('refreshPointsBtn'),
+  pointsToggleBtn: document.getElementById('pointsToggleBtn'),
+  pointsPanel: document.getElementById('pointsPanel'),
   detailSheet: document.getElementById('detailSheet'),
   detailBody: document.getElementById('detailBody'),
   toast: document.getElementById('toast'),
@@ -82,7 +87,7 @@ async function init() {
   }
   renderAuthState();
   if (isLoggedIn()) {
-    await Promise.all([loadHistory(true), loadPointLogs()]);
+    await loadHistory(true);
   } else {
     await createWebLoginSession();
   }
@@ -96,13 +101,13 @@ function bindEvents() {
   els.imageInput.addEventListener('change', renderSelectedFiles);
   els.createForm.addEventListener('submit', submitCreate);
   els.newQrBtn.addEventListener('click', createWebLoginSession);
+  els.closeTaskBtn.addEventListener('click', () => els.taskPanel.classList.add('hidden'));
   els.goHistoryBtn.addEventListener('click', () => switchView('history'));
-  els.refreshHistoryBtn.addEventListener('click', () => loadHistory(true));
   els.loadMoreBtn.addEventListener('click', () => loadHistory(false));
   els.checkinBtn.addEventListener('click', checkin);
   els.cdkForm.addEventListener('submit', redeemCdk);
   els.logoutBtn.addEventListener('click', logout);
-  els.refreshPointsBtn.addEventListener('click', loadPointLogs);
+  els.pointsToggleBtn.addEventListener('click', togglePointLogs);
   document.querySelectorAll('[data-close="detail"]').forEach(el => el.addEventListener('click', closeDetail));
 }
 
@@ -149,7 +154,20 @@ function renderPromptCount() {
 function renderSelectedFiles() {
   const files = Array.from(els.imageInput.files || []).slice(0, 4);
   els.fileCount.textContent = files.length ? `${files.length}/4 张` : '最多 4 张';
-  els.fileName.textContent = files.length ? files.map(file => file.name).join('、') : '支持相册图片，最多 4 张';
+  els.uploadPanel.querySelector('.upload-area').classList.toggle('has-image', files.length > 0);
+  if (!files.length) {
+    els.uploadPlaceholder.innerHTML = `
+      <span class="upload-icon">+</span>
+      <span class="upload-text">上传参考图</span>
+      <span id="fileName" class="upload-hint">最多 4 张，支持相册或拍照</span>`;
+    return;
+  }
+  const previews = files.map(file => `<img class="preview-tile" src="${escapeHtml(URL.createObjectURL(file))}" alt="参考图">`).join('');
+  els.uploadPlaceholder.innerHTML = `
+    <div class="preview-grid">
+      ${previews}
+      <div class="preview-count">${files.length}/4 张 · 点击继续添加</div>
+    </div>`;
 }
 
 function setMode(mode) {
@@ -161,6 +179,7 @@ function setMode(mode) {
     ? '例如：保留主体，把背景改成雨夜霓虹街道。'
     : '例如：一只漂浮在太空里的猫，电影感打光，超细节...';
   els.submitBtn.textContent = mode === 'img2img' ? '根据图片生成' : '开始生成';
+  els.submitBtn.classList.toggle('edit', mode === 'img2img');
 }
 
 function switchView(view) {
@@ -176,7 +195,6 @@ function switchView(view) {
   if (view === 'history') loadHistory(true);
   if (view === 'profile') {
     loadProfile();
-    loadPointLogs();
   }
 }
 
@@ -232,7 +250,7 @@ async function checkWebLoginStatus() {
     localStorage.setItem('mq_h5_token', state.token);
     localStorage.setItem('mq_pc_token', state.token);
     renderAuthState();
-    await Promise.all([loadProfile(), loadHistory(true), loadPointLogs()]);
+    await Promise.all([loadProfile(), loadHistory(true)]);
     toast('登录成功');
   }
 }
@@ -244,6 +262,7 @@ function isLoggedIn() {
 function renderAuthState() {
   const loggedIn = isLoggedIn();
   els.authPanel.classList.toggle('hidden', loggedIn || state.view !== 'create');
+  els.modeSwitch.classList.toggle('hidden', !loggedIn || state.view !== 'create');
   els.createForm.classList.toggle('hidden', !loggedIn);
   if (!loggedIn) {
     els.userPoints.textContent = '--';
@@ -350,28 +369,44 @@ async function loadHistory(reset) {
 
 function renderHistory() {
   els.loadMoreBtn.classList.toggle('hidden', state.history.length >= state.total);
+  els.emptyHistory.classList.toggle('hidden', state.history.length > 0);
+  els.historyList.classList.toggle('hidden', state.history.length === 0);
+  els.pollingTip.classList.toggle('hidden', !state.history.some(item => item.status === 'pending'));
   if (!state.history.length) {
-    els.historyList.innerHTML = '<section class="task-card"><p>暂无创作记录。</p></section>';
+    els.historyList.innerHTML = '';
     return;
   }
   els.historyList.innerHTML = state.history.map(item => {
     const imageUrl = resolveImageUrl(item.thumbnail_image_path || item.result_image_path);
+    const statusClass = item.status === 'pending' ? 'pending' : (item.status === 'failed' ? 'failed' : '');
+    const typeText = item.type === 'img2img' ? '图生图' : '文生图';
     return `
-      <article class="history-item" data-id="${item.id}">
-        <div class="thumb">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="生成图">` : statusText(item.status)}</div>
-        <div class="history-info">
-          <div class="history-meta">
-            <span class="badge ${item.status === 'pending' ? 'pending' : item.status === 'failed' ? 'failed' : ''}">${statusText(item.status)}</span>
-            <span>${item.type === 'img2img' ? '图生图' : '文生图'}</span>
-            <span>${formatDateTime(item.created_at)}</span>
+      <article class="history-card" data-id="${item.id}">
+        ${imageUrl
+          ? `<img class="history-thumb" src="${escapeHtml(imageUrl)}" alt="生成图">`
+          : `<div class="history-thumb placeholder ${statusClass}">
+              <span>${statusText(item.status)}</span>
+              ${item.error_message ? `<span class="error-text">${escapeHtml(compact(item.error_message, 48))}</span>` : ''}
+            </div>`}
+        <div class="history-meta">
+          <div class="meta-top">
+            <span class="status-badge ${statusClass}">${statusText(item.status)}</span>
+            <span class="history-type">${typeText}</span>
           </div>
-          <h3>${escapeHtml(compact(item.prompt, 46))}</h3>
-          ${item.error_message ? `<p class="history-error">${escapeHtml(compact(item.error_message, 42))}</p>` : ''}
+          <span class="history-prompt">${escapeHtml(compact(item.prompt, 56))}</span>
+          <span class="history-info">${escapeHtml(item.size || '-')} · ${formatDateTime(item.created_at)}</span>
+          ${item.status === 'failed' ? `<button class="retry-btn" data-retry="${item.id}" type="button">重新生成</button>` : ''}
         </div>
       </article>`;
   }).join('');
-  document.querySelectorAll('.history-item').forEach(item => {
+  document.querySelectorAll('.history-card').forEach(item => {
     item.addEventListener('click', () => openDetail(item.dataset.id));
+  });
+  document.querySelectorAll('[data-retry]').forEach(btn => {
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      retryGeneration(btn.dataset.retry);
+    });
   });
 }
 
@@ -379,19 +414,43 @@ async function openDetail(id) {
   try {
     const item = await api(`/api/images/${id}`);
     const imageUrl = resolveImageUrl(item.result_image_path);
+    const typeText = item.type === 'img2img' ? '图生图' : '文生图';
     els.detailBody.innerHTML = `
-      <div class="detail-image">${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="生成图">` : statusText(item.status)}</div>
-      <h2 class="detail-title">任务 #${item.id}</h2>
-      <p class="detail-text">${escapeHtml(item.prompt || '')}</p>
-      <p class="detail-text">类型：${item.type === 'img2img' ? '图生图' : '文生图'}<br>尺寸：${escapeHtml(item.size || '-')}<br>积分：${item.points_cost || 0}<br>时间：${formatDateTime(item.created_at)}</p>
-      ${item.error_message ? `<p class="detail-text">失败原因：${escapeHtml(item.error_message)}</p>` : ''}
-      <div class="detail-actions">
-        ${imageUrl ? `<a href="${escapeHtml(imageUrl)}" target="_blank" rel="noreferrer">查看原图</a>` : ''}
-        ${item.status === 'failed' ? `<button type="button" data-retry="${item.id}">重新生成</button>` : ''}
-      </div>`;
+      <section class="card image-card">
+        <div class="image-tag">${typeText}</div>
+        ${imageUrl
+          ? `<img class="detail-image" src="${escapeHtml(imageUrl)}" alt="生成图">`
+          : `<div class="history-thumb placeholder ${item.status === 'failed' ? 'failed' : 'pending'}">${statusText(item.status)}</div>`}
+      </section>
+      <section class="card info-card">
+        <div class="prompt-block">
+          <span class="block-label">提示词</span>
+          <span class="prompt-text">${escapeHtml(item.prompt || '')}</span>
+        </div>
+        <div class="info-grid">
+          <div class="info-pill"><span class="detail-label">尺寸</span><span class="detail-value">${escapeHtml(item.size || '-')}</span></div>
+          <div class="info-pill"><span class="detail-label">类型</span><span class="detail-value">${typeText}</span></div>
+          <div class="info-pill"><span class="detail-label">积分</span><span class="detail-value">${item.points_cost || 0}</span></div>
+          <div class="info-pill"><span class="detail-label">状态</span><span class="detail-value">${statusText(item.status)}</span></div>
+        </div>
+        <div class="time-row"><span>生成时间</span><span>${formatDateTime(item.created_at)}</span></div>
+        ${item.error_message ? `<div class="prompt-block error-block"><span class="block-label">失败原因</span><span class="prompt-text">${escapeHtml(item.error_message)}</span></div>` : ''}
+      </section>
+      <section class="card action-card">
+        <button class="action-btn action-primary" type="button" data-remix="${item.id}" ${imageUrl ? '' : 'disabled'}>
+          <span>基于此图再创作</span>
+          <span class="action-sub">带入图生图继续调整</span>
+        </button>
+        <div class="action-row">
+          ${imageUrl ? `<a class="action-btn action-secondary" href="${escapeHtml(imageUrl)}" target="_blank" rel="noreferrer">查看原图</a>` : '<span></span>'}
+          ${item.status === 'failed' ? `<button class="action-btn action-danger" type="button" data-retry="${item.id}">重新生成</button>` : '<span></span>'}
+        </div>
+      </section>`;
     els.detailSheet.classList.remove('hidden');
     const retryBtn = els.detailBody.querySelector('[data-retry]');
     if (retryBtn) retryBtn.addEventListener('click', () => retryGeneration(item.id));
+    const remixBtn = els.detailBody.querySelector('[data-remix]');
+    if (remixBtn && imageUrl) remixBtn.addEventListener('click', () => remixFromDetail(item));
   } catch (err) {
     toast(err.message || '加载详情失败');
   }
@@ -399,6 +458,17 @@ async function openDetail(id) {
 
 function closeDetail() {
   els.detailSheet.classList.add('hidden');
+}
+
+function remixFromDetail(item) {
+  closeDetail();
+  switchView('create');
+  setMode('img2img');
+  els.promptInput.value = item.prompt ? `${item.prompt}\n\n请在保留主体氛围的基础上，进一步优化细节与构图。` : '';
+  els.sizeSelect.value = item.size || '1024x1024';
+  renderPromptCount();
+  renderCost();
+  toast('已带入描述，请上传原图或参考图');
 }
 
 async function retryGeneration(id) {
@@ -420,7 +490,8 @@ async function checkin() {
   try {
     const result = await api('/api/user/checkin', { method: 'POST' });
     toast(`签到成功，获得 ${result.points} 积分`);
-    await Promise.all([loadProfile(), loadPointLogs()]);
+    await loadProfile();
+    if (!els.pointsPanel.classList.contains('hidden')) await loadPointLogs();
   } catch (err) {
     toast(err.message || '签到失败');
   }
@@ -437,7 +508,8 @@ async function redeemCdk(event) {
     const result = await api('/api/user/cdk/redeem', { method: 'POST', body: { code } });
     els.cdkInput.value = '';
     toast(`兑换成功，获得 ${result.points} 积分`);
-    await Promise.all([loadProfile(), loadPointLogs()]);
+    await loadProfile();
+    if (!els.pointsPanel.classList.contains('hidden')) await loadPointLogs();
   } catch (err) {
     toast(err.message || '兑换失败');
   }
@@ -445,6 +517,7 @@ async function redeemCdk(event) {
 
 async function loadPointLogs() {
   if (!isLoggedIn()) return;
+  els.pointsPanel.classList.remove('hidden');
   const data = await api('/api/user/points?page=1&pageSize=12');
   if (!data.list.length) {
     els.pointsList.innerHTML = '<div class="points-row"><span>暂无积分记录</span></div>';
@@ -459,6 +532,15 @@ async function loadPointLogs() {
       <strong class="${item.amount > 0 ? 'positive' : 'negative'}">${item.amount > 0 ? '+' : ''}${item.amount}</strong>
     </div>
   `).join('');
+}
+
+async function togglePointLogs() {
+  if (!isLoggedIn()) return;
+  if (!els.pointsPanel.classList.contains('hidden')) {
+    els.pointsPanel.classList.add('hidden');
+    return;
+  }
+  await loadPointLogs();
 }
 
 function logout() {
