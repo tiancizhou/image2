@@ -29,6 +29,9 @@ app.use('/admin', express.static(path.join(__dirname, 'admin', 'public')));
 // PC 用户端静态页面
 app.use('/pc', express.static(path.join(__dirname, 'pc', 'public')));
 
+// H5 用户端静态页面
+app.use('/h5', express.static(path.join(__dirname, 'h5', 'public')));
+
 // H5 抽奖活动页
 app.use('/lottery', express.static(path.join(__dirname, 'lottery', 'public')));
 
@@ -49,6 +52,11 @@ app.get('/admin/{*splat}', (req, res) => {
 // PC 用户端 SPA fallback
 app.get('/pc/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'pc', 'public', 'index.html'));
+});
+
+// H5 用户端 SPA fallback
+app.get('/h5/{*splat}', (req, res) => {
+  res.sendFile(path.join(__dirname, 'h5', 'public', 'index.html'));
 });
 
 // H5 抽奖活动页 fallback

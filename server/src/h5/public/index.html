@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>梦倩绘境 | H5 创作台</title>
+  <link rel="stylesheet" href="/h5/style.css">
+</head>
+<body>
+  <main class="app">
+    <section class="hero-card">
+      <div class="hero-glow"></div>
+      <span class="kicker">梦倩绘境</span>
+      <h1>梦境画面灵感手册</h1>
+      <p>小程序审核期间，也可以在这里继续创作和查看历史。</p>
+      <div class="balance-row">
+        <span>当前积分</span>
+        <strong id="userPoints">--</strong>
+      </div>
+    </section>
+
+    <section id="authPanel" class="auth-panel">
+      <div>
+        <span class="panel-badge">微信账号同步</span>
+        <h2>扫码登录后继续使用</h2>
+        <p>使用微信扫描小程序码确认登录，积分、历史和小程序保持一致。</p>
+      </div>
+      <div class="qr-wrap">
+        <img id="qrImage" alt="小程序登录码">
+        <span id="qrStatus">正在生成小程序码...</span>
+      </div>
+      <button id="newQrBtn" class="secondary-btn" type="button">刷新登录码</button>
+    </section>
+
+    <section id="createView" class="view">
+      <div class="mode-switch">
+        <button class="mode-item active" data-mode="text2img" type="button">
+          <strong>文生图</strong>
+          <span>从提示词开始</span>
+        </button>
+        <button class="mode-item" data-mode="img2img" type="button">
+          <strong>图生图</strong>
+          <span>上传参考图生成</span>
+        </button>
+      </div>
+
+      <form id="createForm" class="studio-card">
+        <div id="uploadPanel" class="source-panel hidden">
+          <div class="section-head">
+            <strong>参考图片</strong>
+            <span id="fileCount">最多 4 张</span>
+          </div>
+          <label class="upload-area">
+            <input id="imageInput" type="file" accept="image/*" multiple>
+            <span class="upload-icon">+</span>
+            <strong>上传参考图</strong>
+            <em id="fileName">支持相册图片，最多 4 张</em>
+          </label>
+        </div>
+
+        <div class="section-head">
+          <strong id="promptLabel">画面描述</strong>
+          <span id="promptCount">0/2000</span>
+        </div>
+        <textarea id="promptInput" maxlength="2000" placeholder="例如：一只漂浮在太空里的猫，电影感打光，超细节..."></textarea>
+
+        <div class="section-head size-head">
+          <strong>输出尺寸</strong>
+          <span>消耗 <b id="currentCost">1</b> 积分</span>
+        </div>
+        <select id="sizeSelect"></select>
+
+        <div class="info-bar">
+          <span>本次预计消耗 <b id="costInline">1</b> 积分</span>
+          <span>剩余 <b id="pointsInline">--</b> 积分</span>
+        </div>
+
+        <button id="submitBtn" class="create-btn" type="submit">开始生成</button>
+      </form>
+
+      <section id="taskPanel" class="task-card hidden">
+        <span class="panel-badge">TASK ACCEPTED</span>
+        <h2>创作任务已进入队列</h2>
+        <p id="taskText">完成后会出现在历史列表。</p>
+        <button class="secondary-btn" id="goHistoryBtn" type="button">去历史查看</button>
+      </section>
+    </section>
+
+    <section id="historyView" class="view hidden">
+      <div class="section-head page-title">
+        <div>
+          <span class="panel-badge">HISTORY</span>
+          <strong>最近 3 天创作</strong>
+        </div>
+        <button id="refreshHistoryBtn" class="text-btn" type="button">刷新</button>
+      </div>
+      <div id="historyList" class="history-list"></div>
+      <button id="loadMoreBtn" class="secondary-btn hidden" type="button">加载更多</button>
+    </section>
+
+    <section id="profileView" class="view hidden">
+      <section class="profile-card">
+        <div class="avatar">梦</div>
+        <h2 id="userName">绘境用户</h2>
+        <p id="userCode">扫码登录后显示账户</p>
+        <strong><span id="accountPoints">--</span> 积分</strong>
+      </section>
+
+      <section class="action-list">
+        <button id="checkinBtn" type="button" class="action-row">
+          <span class="action-icon">签</span>
+          <span><strong>每日签到</strong><em>领取今日积分</em></span>
+        </button>
+        <form id="cdkForm" class="cdk-card">
+          <label>兑换码</label>
+          <div>
+            <input id="cdkInput" placeholder="输入 CDK">
+            <button type="submit">兑换</button>
+          </div>
+        </form>
+        <button id="logoutBtn" type="button" class="action-row muted">
+          <span class="action-icon">退</span>
+          <span><strong>退出登录</strong><em>切换其他微信账户</em></span>
+        </button>
+      </section>
+
+      <section class="points-card">
+        <div class="section-head">
+          <strong>积分变动</strong>
+          <button id="refreshPointsBtn" class="text-btn" type="button">刷新</button>
+        </div>
+        <div id="pointsList"></div>
+      </section>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab active" data-view="create" type="button">创作</button>
+    <button class="tab" data-view="history" type="button">历史</button>
+    <button class="tab" data-view="profile" type="button">我的</button>
+  </nav>
+
+  <section id="detailSheet" class="sheet hidden">
+    <div class="sheet-mask" data-close="detail"></div>
+    <article class="sheet-panel">
+      <button class="sheet-close" data-close="detail" type="button">关闭</button>
+      <div id="detailBody"></div>
+    </article>
+  </section>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="/h5/app.js"></script>
+</body>
+</html>
