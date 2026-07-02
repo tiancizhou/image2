@@ -42,6 +42,7 @@ const els = {
   promptInput: document.getElementById('promptInput'),
   promptCount: document.getElementById('promptCount'),
   sizeGrid: document.getElementById('sizeGrid'),
+  sizeSelect: document.getElementById('sizeSelect'),
   currentCost: document.getElementById('currentCost'),
   costInline: document.getElementById('costInline'),
   pointsInline: document.getElementById('pointsInline'),
@@ -112,29 +113,35 @@ async function init() {
 }
 
 function bindEvents() {
-  els.tabs.forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
-  els.modeBtns.forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.mode)));
-  els.promptInput.addEventListener('input', renderPromptCount);
-  els.imageInput.addEventListener('change', renderSelectedFiles);
-  els.createForm.addEventListener('submit', submitCreate);
-  els.newQrBtn.addEventListener('click', createWebLoginSession);
-  els.closeTaskBtn.addEventListener('click', () => els.taskPanel.classList.add('hidden'));
-  els.goHistoryBtn.addEventListener('click', () => switchView('history'));
-  els.loadMoreBtn.addEventListener('click', () => loadHistory(false));
-  els.checkinBtn.addEventListener('click', checkin);
-  els.cdkForm.addEventListener('submit', redeemCdk);
-  els.logoutBtn.addEventListener('click', logout);
-  els.pointsToggleBtn.addEventListener('click', togglePointLogs);
-  els.inviteBtn.addEventListener('click', shareInvite);
-  els.communityBtn.addEventListener('click', openCommunity);
-  els.communityImage.addEventListener('load', () => els.communityLoading.classList.add('hidden'));
-  els.communityImage.addEventListener('error', () => {
+  els.tabs.forEach(btn => on(btn, 'click', () => switchView(btn.dataset.view)));
+  els.modeBtns.forEach(btn => on(btn, 'click', () => setMode(btn.dataset.mode)));
+  on(els.promptInput, 'input', renderPromptCount);
+  on(els.imageInput, 'change', renderSelectedFiles);
+  on(els.sizeSelect, 'change', () => selectSize(els.sizeSelect.value));
+  on(els.createForm, 'submit', submitCreate);
+  on(els.newQrBtn, 'click', createWebLoginSession);
+  on(els.closeTaskBtn, 'click', () => els.taskPanel?.classList.add('hidden'));
+  on(els.goHistoryBtn, 'click', () => switchView('history'));
+  on(els.loadMoreBtn, 'click', () => loadHistory(false));
+  on(els.checkinBtn, 'click', checkin);
+  on(els.cdkForm, 'submit', redeemCdk);
+  on(els.logoutBtn, 'click', logout);
+  on(els.pointsToggleBtn, 'click', togglePointLogs);
+  on(els.inviteBtn, 'click', shareInvite);
+  on(els.communityBtn, 'click', openCommunity);
+  on(els.communityImage, 'load', () => els.communityLoading?.classList.add('hidden'));
+  on(els.communityImage, 'error', () => {
+    if (!els.communityLoading) return;
     els.communityLoading.textContent = '名片码加载失败';
     els.communityLoading.classList.remove('hidden');
   });
-  els.communityPreviewBtn.addEventListener('click', previewCommunityCard);
-  document.querySelectorAll('[data-close="detail"]').forEach(el => el.addEventListener('click', closeDetail));
-  document.querySelectorAll('[data-close="community"]').forEach(el => el.addEventListener('click', closeCommunity));
+  on(els.communityPreviewBtn, 'click', previewCommunityCard);
+  document.querySelectorAll('[data-close="detail"]').forEach(el => on(el, 'click', closeDetail));
+  document.querySelectorAll('[data-close="community"]').forEach(el => on(el, 'click', closeCommunity));
+}
+
+function on(el, event, handler) {
+  if (el) el.addEventListener(event, handler);
 }
 
 async function loadPublicConfig() {
@@ -170,6 +177,15 @@ function renderSizeOptions() {
     { value: '2048x2048', label: '2K 正方', desc: '2048×2048', rect: 'width:22px;height:22px;' },
     { value: '3840x2160', label: '4K 横版', desc: '3840×2160', rect: 'width:30px;height:17px;' },
   ];
+  if (!els.sizeGrid) {
+    if (els.sizeSelect) {
+      els.sizeSelect.innerHTML = sizes.map((item) => {
+        const selected = item.value === state.size ? ' selected' : '';
+        return `<option value="${item.value}"${selected}>${item.label} ${item.desc} · ${costFor(item.value)} 积分</option>`;
+      }).join('');
+    }
+    return;
+  }
   els.sizeGrid.innerHTML = sizes.map((item) => {
     const active = item.value === state.size ? ' size-active' : '';
     const costText = `${costFor(item.value)} 积分`;
@@ -198,12 +214,14 @@ function costFor(size) {
 
 function renderCost() {
   const cost = costFor(state.size);
-  els.currentCost.textContent = cost;
-  els.costInline.textContent = cost;
+  if (els.currentCost) els.currentCost.textContent = cost;
+  if (els.costInline) els.costInline.textContent = cost;
 }
 
 function renderPromptCount() {
-  els.promptCount.textContent = `${els.promptInput.value.length}/2000`;
+  if (els.promptCount && els.promptInput) {
+    els.promptCount.textContent = `${els.promptInput.value.length}/2000`;
+  }
 }
 
 function renderSelectedFiles() {
@@ -244,7 +262,7 @@ function switchView(view) {
   }
   state.view = view;
   els.tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
-  Object.entries(els.views).forEach(([key, el]) => el.classList.toggle('hidden', key !== view));
+  Object.entries(els.views).forEach(([key, el]) => el?.classList.toggle('hidden', key !== view));
   renderAuthState();
   if (!isLoggedIn()) return;
   if (view === 'history') loadHistory(true);
@@ -255,8 +273,8 @@ function switchView(view) {
 
 async function createWebLoginSession() {
   stopPolling();
-  els.qrImage.removeAttribute('src');
-  els.qrStatus.textContent = '正在生成小程序码...';
+  els.qrImage?.removeAttribute('src');
+  if (els.qrStatus) els.qrStatus.textContent = '正在生成小程序码...';
   try {
     const data = await api('/api/auth/web-login/session', {
       method: 'POST',
@@ -264,12 +282,13 @@ async function createWebLoginSession() {
       body: { invite_code: getIncomingInviteCode() },
     });
     state.webLoginToken = data.token;
-    els.qrImage.src = data.qr_image;
-    els.qrStatus.textContent = '请用微信扫码打开小程序确认登录';
+    if (els.qrImage) els.qrImage.src = data.qr_image;
+    if (els.qrStatus) els.qrStatus.textContent = '请用微信扫码打开小程序确认登录';
     startPolling();
   } catch (err) {
-    els.qrStatus.textContent = err.message || '小程序码生成失败';
-    toast(els.qrStatus.textContent);
+    const message = err.message || '小程序码生成失败';
+    if (els.qrStatus) els.qrStatus.textContent = message;
+    toast(message);
   }
 }
 
@@ -290,16 +309,16 @@ async function checkWebLoginStatus() {
   try {
     data = await api(`/api/auth/web-login/status?token=${state.webLoginToken}`, { auth: false });
   } catch (err) {
-    els.qrStatus.textContent = err.message || '登录状态查询失败';
+    if (els.qrStatus) els.qrStatus.textContent = err.message || '登录状态查询失败';
     return;
   }
   if (data.status === 'pending') {
-    els.qrStatus.textContent = '等待微信扫码确认...';
+    if (els.qrStatus) els.qrStatus.textContent = '等待微信扫码确认...';
     return;
   }
   if (data.status === 'expired') {
     stopPolling();
-    els.qrStatus.textContent = '小程序码已过期，请刷新';
+    if (els.qrStatus) els.qrStatus.textContent = '小程序码已过期，请刷新';
     return;
   }
   if (data.status === 'confirmed') {
@@ -320,13 +339,13 @@ function isLoggedIn() {
 
 function renderAuthState() {
   const loggedIn = isLoggedIn();
-  els.authPanel.classList.toggle('hidden', loggedIn || state.view !== 'create');
-  els.modeSwitch.classList.toggle('hidden', !loggedIn || state.view !== 'create');
-  els.createForm.classList.toggle('hidden', !loggedIn);
+  els.authPanel?.classList.toggle('hidden', loggedIn || state.view !== 'create');
+  els.modeSwitch?.classList.toggle('hidden', !loggedIn || state.view !== 'create');
+  els.createForm?.classList.toggle('hidden', !loggedIn);
   if (!loggedIn) {
-    els.userPoints.textContent = '--';
-    els.pointsInline.textContent = '--';
-    els.accountPoints.textContent = '--';
+    if (els.userPoints) els.userPoints.textContent = '--';
+    if (els.pointsInline) els.pointsInline.textContent = '--';
+    if (els.accountPoints) els.accountPoints.textContent = '--';
     return;
   }
   renderUser();
@@ -343,11 +362,11 @@ function renderUser() {
   const user = state.user;
   if (!user) return;
   const displayName = user.nickname || `绘境用户 #${user.id}`;
-  els.userPoints.textContent = user.points ?? 0;
-  els.pointsInline.textContent = user.points ?? 0;
-  els.accountPoints.textContent = user.points ?? 0;
-  els.userName.textContent = displayName;
-  els.userCode.textContent = `UID ${user.id}`;
+  if (els.userPoints) els.userPoints.textContent = user.points ?? 0;
+  if (els.pointsInline) els.pointsInline.textContent = user.points ?? 0;
+  if (els.accountPoints) els.accountPoints.textContent = user.points ?? 0;
+  if (els.userName) els.userName.textContent = displayName;
+  if (els.userCode) els.userCode.textContent = `UID ${user.id}`;
 }
 
 async function submitCreate(event) {
@@ -596,6 +615,7 @@ async function loadPointLogs() {
 
 async function togglePointLogs() {
   if (!isLoggedIn()) return;
+  if (!els.pointsPanel) return;
   if (!els.pointsPanel.classList.contains('hidden')) {
     els.pointsPanel.classList.add('hidden');
     return;
@@ -605,18 +625,22 @@ async function togglePointLogs() {
 
 function renderCommunityConfig() {
   const community = state.community;
-  els.communityMenuText.textContent = community.title;
-  els.communityMenuSub.textContent = community.desc;
-  els.communityBadgeText.textContent = community.buttonText;
-  els.communityTitle.textContent = community.title;
-  els.communityDesc.textContent = community.desc;
-  els.communityPreviewBtn.textContent = community.buttonText;
+  if (els.communityMenuText) els.communityMenuText.textContent = community.title;
+  if (els.communityMenuSub) els.communityMenuSub.textContent = community.desc;
+  if (els.communityBadgeText) els.communityBadgeText.textContent = community.buttonText;
+  if (els.communityTitle) els.communityTitle.textContent = community.title;
+  if (els.communityDesc) els.communityDesc.textContent = community.desc;
+  if (els.communityPreviewBtn) els.communityPreviewBtn.textContent = community.buttonText;
   if (community.imageUrl) {
-    els.communityLoading.textContent = '名片码加载中...';
-    els.communityLoading.classList.remove('hidden');
-    els.communityImage.src = community.imageUrl;
-    if (els.communityImage.complete && els.communityImage.naturalWidth > 0) {
-      els.communityLoading.classList.add('hidden');
+    if (els.communityLoading) {
+      els.communityLoading.textContent = '名片码加载中...';
+      els.communityLoading.classList.remove('hidden');
+    }
+    if (els.communityImage) {
+      els.communityImage.src = community.imageUrl;
+      if (els.communityImage.complete && els.communityImage.naturalWidth > 0) {
+        els.communityLoading?.classList.add('hidden');
+      }
     }
   }
 }
@@ -659,11 +683,15 @@ function getIncomingInviteCode() {
 
 function openCommunity() {
   renderCommunityConfig();
+  if (!els.communityModal) {
+    previewCommunityCard();
+    return;
+  }
   els.communityModal.classList.remove('hidden');
 }
 
 function closeCommunity() {
-  els.communityModal.classList.add('hidden');
+  els.communityModal?.classList.add('hidden');
 }
 
 function previewCommunityCard() {
@@ -801,6 +829,7 @@ function escapeHtml(value) {
 
 let toastTimer = null;
 function toast(message) {
+  if (!els.toast) return;
   clearTimeout(toastTimer);
   els.toast.textContent = message;
   els.toast.classList.remove('hidden');

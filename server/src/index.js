@@ -30,7 +30,11 @@ app.use('/admin', express.static(path.join(__dirname, 'admin', 'public')));
 app.use('/pc', express.static(path.join(__dirname, 'pc', 'public')));
 
 // H5 用户端静态页面
-app.use('/h5', express.static(path.join(__dirname, 'h5', 'public')));
+app.use('/h5', express.static(path.join(__dirname, 'h5', 'public'), {
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+  },
+}));
 
 // H5 抽奖活动页
 app.use('/lottery', express.static(path.join(__dirname, 'lottery', 'public')));
