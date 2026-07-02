@@ -354,7 +354,6 @@ button {
   outline: none;
 }
 
-.size-select,
 .cdk-input {
   width: 100%;
   height: 46px;
@@ -364,6 +363,76 @@ button {
   color: #30281d;
   background: #fff5e4;
   outline: none;
+}
+
+.size-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.size-card {
+  display: flex;
+  flex: 1;
+  min-width: 105px;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 8px;
+  border-radius: 10px;
+  color: inherit;
+  background: #f8f0ff;
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background 0.2s ease-out;
+}
+
+.size-card:active {
+  transform: scale(0.98);
+}
+
+.size-card.size-active {
+  background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3);
+}
+
+.size-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  margin-bottom: 4px;
+}
+
+.size-rect {
+  display: block;
+  border: 1.5px solid #6c5ce7;
+  border-radius: 3px;
+  transition: border-color 0.2s ease-out;
+}
+
+.size-active .size-rect {
+  border-color: #fff;
+}
+
+.size-label {
+  color: #6c5ce7;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.size-active .size-label {
+  color: #fff;
+}
+
+.size-desc,
+.size-cost {
+  margin-top: 2px;
+  color: #b2bec3;
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+.size-active .size-desc,
+.size-active .size-cost {
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .info-bar {
@@ -792,6 +861,14 @@ button {
   background: linear-gradient(135deg, #fab1a0, #fd79a8);
 }
 
+.invite-icon {
+  background: linear-gradient(135deg, #ffd166, #ef476f);
+}
+
+.group-icon {
+  background: linear-gradient(135deg, #233026, #70a342);
+}
+
 .point-icon {
   background: linear-gradient(135deg, #a29bfe, #6c5ce7);
 }
@@ -811,6 +888,17 @@ button {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
+}
+
+.menu-main .menu-text {
+  flex: none;
+}
+
+.menu-sub {
+  color: #9d8d78;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .menu-badge {
@@ -1122,6 +1210,130 @@ button {
 .action-danger {
   color: #cf6656;
   background: #ffe5df;
+}
+
+.community-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.community-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(35, 48, 38, 0.48);
+  backdrop-filter: blur(4px);
+}
+
+.community-card {
+  position: relative;
+  z-index: 1;
+  width: min(430px, 100%);
+  padding: 22px 18px 17px;
+  border-radius: 19px;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(112, 163, 66, 0.16), transparent 140px),
+    #fffaf0;
+  box-shadow: 0 14px 40px rgba(35, 48, 38, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.community-mark {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff8e8;
+  background: linear-gradient(135deg, #233026, #70a342);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.community-title {
+  margin-top: 14px;
+  color: #233026;
+  font-size: 17px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.community-desc {
+  margin-top: 8px;
+  color: #8c7b65;
+  font-size: 12.5px;
+  line-height: 1.8;
+  text-align: center;
+}
+
+.wechat-card-box {
+  position: relative;
+  width: 100%;
+  min-height: 298px;
+  margin-top: 15px;
+  padding: 9px;
+  border-radius: 15px;
+  background: #f4ead9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.wechat-card-loading {
+  position: absolute;
+  inset: 9px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: #6a8e3d;
+  background: rgba(255, 250, 240, 0.88);
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.wechat-card-image {
+  position: relative;
+  z-index: 2;
+  max-width: 215px;
+  width: 100%;
+  height: 280px;
+  border-radius: 12px;
+  background: #fff;
+  object-fit: contain;
+}
+
+.community-actions {
+  width: 100%;
+  display: flex;
+  gap: 9px;
+  margin-top: 15px;
+}
+
+.community-btn {
+  flex: 1;
+  height: 43px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.community-btn.secondary {
+  color: #6e5e4a;
+  background: #efe3d0;
+}
+
+.community-btn.primary {
+  color: #fffaf0;
+  background: linear-gradient(135deg, #233026, #70a342);
 }
 
 .toast {

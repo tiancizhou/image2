@@ -34,10 +34,13 @@ CREATE TABLE IF NOT EXISTS web_login_sessions (
   token VARCHAR PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   status VARCHAR DEFAULT 'pending',
+  invite_code VARCHAR DEFAULT '',
   expires_at TIMESTAMP NOT NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   confirmed_at TIMESTAMP
 );
+
+ALTER TABLE web_login_sessions ADD COLUMN IF NOT EXISTS invite_code VARCHAR DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS api_channels (
   id SERIAL PRIMARY KEY,

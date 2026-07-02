@@ -68,7 +68,7 @@
           <span>输出尺寸</span>
           <span class="hint">消耗 <b id="currentCost">1</b> 积分</span>
         </div>
-        <select id="sizeSelect" class="size-select"></select>
+        <div id="sizeGrid" class="size-grid"></div>
 
         <div class="info-bar">
           <span class="points-info">本次预计消耗 <b id="costInline">1</b> 积分</span>
@@ -136,6 +136,22 @@
           <span class="menu-text">积分记录</span>
           <span class="menu-badge community">查看</span>
         </button>
+        <button id="inviteBtn" class="menu-item" type="button">
+          <span class="menu-icon invite-icon">邀</span>
+          <span class="menu-main">
+            <span class="menu-text">邀请好友赚积分</span>
+            <span class="menu-sub">好友通过你的链接首次注册成功后，你会获得邀请积分。</span>
+          </span>
+          <span class="menu-badge community">分享</span>
+        </button>
+        <button id="communityBtn" class="menu-item" type="button">
+          <span class="menu-icon group-icon">群</span>
+          <span class="menu-main">
+            <span id="communityMenuText" class="menu-text">加入梦倩绘境交流群</span>
+            <span id="communityMenuSub" class="menu-sub">添加作者微信，进群领取积分福利，交流提示词和画面审美参考。</span>
+          </span>
+          <span id="communityBadgeText" class="menu-badge community">查看名片码</span>
+        </button>
         <button id="logoutBtn" class="menu-item" type="button">
           <span class="menu-icon dark-icon">退</span>
           <span class="menu-text">退出登录</span>
@@ -160,6 +176,23 @@
     <article class="detail-panel">
       <button class="sheet-close" data-close="detail" type="button">关闭</button>
       <div id="detailBody"></div>
+    </article>
+  </section>
+
+  <section id="communityModal" class="community-modal hidden">
+    <div class="community-mask" data-close="community"></div>
+    <article class="community-card">
+      <div class="community-mark">梦</div>
+      <span id="communityTitle" class="community-title">加入梦倩绘境交流群</span>
+      <span id="communityDesc" class="community-desc">添加作者微信，进群领取积分福利，交流提示词和画面审美参考。</span>
+      <div class="wechat-card-box">
+        <span id="communityLoading" class="wechat-card-loading">名片码加载中...</span>
+        <img id="communityImage" class="wechat-card-image" alt="作者微信名片码">
+      </div>
+      <div class="community-actions">
+        <button class="community-btn secondary" data-close="community" type="button">关闭</button>
+        <button id="communityPreviewBtn" class="community-btn primary" type="button">查看名片码</button>
+      </div>
     </article>
   </section>
 

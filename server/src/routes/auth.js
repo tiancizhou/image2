@@ -60,10 +60,11 @@ router.post('/web-login/session', async (req, res, next) => {
   try {
     const token = crypto.randomBytes(16).toString('hex');
     const expiresInSeconds = 300;
+    const inviteCode = String(req.body?.invite_code || req.body?.inviter || '').trim();
     await db.query(
-      `INSERT INTO web_login_sessions (token, expires_at)
-       VALUES ($1, NOW() + ($2 || ' seconds')::interval)`,
-      [token, expiresInSeconds]
+      `INSERT INTO web_login_sessions (token, invite_code, expires_at)
+       VALUES ($1, $2, NOW() + ($3 || ' seconds')::interval)`,
+      [token, inviteCode, expiresInSeconds]
     );
 
     const qrImage = await createMiniProgramCode(token);
@@ -120,13 +121,14 @@ router.post('/web-login/confirm', async (req, res, next) => {
     if (!code) return res.status(400).json({ error: '缺少 code' });
 
     const { rows: sessions } = await db.query(
-      `SELECT token, status, expires_at FROM web_login_sessions WHERE token = $1`,
+      `SELECT token, status, expires_at, invite_code FROM web_login_sessions WHERE token = $1`,
       [token]
     );
     if (sessions.length === 0) return res.status(404).json({ error: '登录会话不存在' });
     if (new Date(sessions[0].expires_at).getTime() < Date.now()) return res.status(400).json({ error: '登录二维码已过期' });
 
-    const user = await getOrCreateWxUser(code, invite_code);
+    const finalInviteCode = invite_code || sessions[0].invite_code || '';
+    const user = await getOrCreateWxUser(code, finalInviteCode);
     await db.query(
       `UPDATE web_login_sessions
        SET status = 'confirmed', user_id = $1, confirmed_at = NOW()

@@ -9,6 +9,13 @@ const state = {
   total: 0,
   history: [],
   loading: false,
+  size: '1024x1024',
+  community: {
+    title: '加入梦倩绘境交流群',
+    desc: '添加作者微信，进群领取积分福利，交流提示词和画面审美参考。',
+    buttonText: '查看名片码',
+    imageUrl: '/static/author-wechat-card.jpg',
+  },
   pricing: {
     '1024x1024': 1,
     '1536x1024': 2,
@@ -34,7 +41,7 @@ const els = {
   promptLabel: document.getElementById('promptLabel'),
   promptInput: document.getElementById('promptInput'),
   promptCount: document.getElementById('promptCount'),
-  sizeSelect: document.getElementById('sizeSelect'),
+  sizeGrid: document.getElementById('sizeGrid'),
   currentCost: document.getElementById('currentCost'),
   costInline: document.getElementById('costInline'),
   pointsInline: document.getElementById('pointsInline'),
@@ -65,6 +72,17 @@ const els = {
   pointsList: document.getElementById('pointsList'),
   pointsToggleBtn: document.getElementById('pointsToggleBtn'),
   pointsPanel: document.getElementById('pointsPanel'),
+  inviteBtn: document.getElementById('inviteBtn'),
+  communityBtn: document.getElementById('communityBtn'),
+  communityMenuText: document.getElementById('communityMenuText'),
+  communityMenuSub: document.getElementById('communityMenuSub'),
+  communityBadgeText: document.getElementById('communityBadgeText'),
+  communityModal: document.getElementById('communityModal'),
+  communityTitle: document.getElementById('communityTitle'),
+  communityDesc: document.getElementById('communityDesc'),
+  communityImage: document.getElementById('communityImage'),
+  communityLoading: document.getElementById('communityLoading'),
+  communityPreviewBtn: document.getElementById('communityPreviewBtn'),
   detailSheet: document.getElementById('detailSheet'),
   detailBody: document.getElementById('detailBody'),
   toast: document.getElementById('toast'),
@@ -77,7 +95,7 @@ init().catch((err) => {
 
 async function init() {
   bindEvents();
-  await loadPricing();
+  await Promise.all([loadPublicConfig(), loadPricing()]);
   if (state.token) {
     try {
       await loadProfile();
@@ -97,7 +115,6 @@ function bindEvents() {
   els.tabs.forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
   els.modeBtns.forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.mode)));
   els.promptInput.addEventListener('input', renderPromptCount);
-  els.sizeSelect.addEventListener('change', renderCost);
   els.imageInput.addEventListener('change', renderSelectedFiles);
   els.createForm.addEventListener('submit', submitCreate);
   els.newQrBtn.addEventListener('click', createWebLoginSession);
@@ -108,7 +125,30 @@ function bindEvents() {
   els.cdkForm.addEventListener('submit', redeemCdk);
   els.logoutBtn.addEventListener('click', logout);
   els.pointsToggleBtn.addEventListener('click', togglePointLogs);
+  els.inviteBtn.addEventListener('click', shareInvite);
+  els.communityBtn.addEventListener('click', openCommunity);
+  els.communityImage.addEventListener('load', () => els.communityLoading.classList.add('hidden'));
+  els.communityImage.addEventListener('error', () => {
+    els.communityLoading.textContent = '名片码加载失败';
+    els.communityLoading.classList.remove('hidden');
+  });
+  els.communityPreviewBtn.addEventListener('click', previewCommunityCard);
   document.querySelectorAll('[data-close="detail"]').forEach(el => el.addEventListener('click', closeDetail));
+  document.querySelectorAll('[data-close="community"]').forEach(el => el.addEventListener('click', closeCommunity));
+}
+
+async function loadPublicConfig() {
+  try {
+    const data = await api('/api/user/public-config', { auth: false });
+    const community = data.community || {};
+    state.community = {
+      title: community.title || state.community.title,
+      desc: community.desc || state.community.desc,
+      buttonText: community.buttonText || state.community.buttonText,
+      imageUrl: resolveAssetUrl(community.imageUrl || state.community.imageUrl, community.imageVersion),
+    };
+  } catch {}
+  renderCommunityConfig();
 }
 
 async function loadPricing() {
@@ -123,18 +163,33 @@ async function loadPricing() {
 }
 
 function renderSizeOptions() {
-  const labels = {
-    '1024x1024': '方图 1024x1024',
-    '1536x1024': '横图 1536x1024',
-    '1024x1536': '竖图 1024x1536',
-    '2048x2048': '高清方图 2048x2048',
-    '3840x2160': '宽屏 3840x2160',
-  };
-  const current = els.sizeSelect.value || '1024x1024';
-  els.sizeSelect.innerHTML = Object.keys(labels).map((size) => {
-    const selected = size === current ? ' selected' : '';
-    return `<option value="${size}"${selected}>${labels[size]} · ${costFor(size)} 积分</option>`;
+  const sizes = [
+    { value: '1024x1024', label: '正方形', desc: '1024×1024', rect: 'width:20px;height:20px;' },
+    { value: '1536x1024', label: '横版', desc: '1536×1024', rect: 'width:28px;height:18px;' },
+    { value: '1024x1536', label: '竖版', desc: '1024×1536', rect: 'width:18px;height:28px;' },
+    { value: '2048x2048', label: '2K 正方', desc: '2048×2048', rect: 'width:22px;height:22px;' },
+    { value: '3840x2160', label: '4K 横版', desc: '3840×2160', rect: 'width:30px;height:17px;' },
+  ];
+  els.sizeGrid.innerHTML = sizes.map((item) => {
+    const active = item.value === state.size ? ' size-active' : '';
+    const costText = `${costFor(item.value)} 积分`;
+    return `
+      <button class="size-card${active}" data-size="${item.value}" type="button">
+        <span class="size-icon"><span class="size-rect" style="${item.rect}"></span></span>
+        <span class="size-label">${item.label}</span>
+        <span class="size-desc">${item.desc}</span>
+        <span class="size-cost">${costText}</span>
+      </button>`;
   }).join('');
+  els.sizeGrid.querySelectorAll('[data-size]').forEach(btn => {
+    btn.addEventListener('click', () => selectSize(btn.dataset.size));
+  });
+}
+
+function selectSize(size) {
+  state.size = size || '1024x1024';
+  renderSizeOptions();
+  renderCost();
 }
 
 function costFor(size) {
@@ -142,7 +197,7 @@ function costFor(size) {
 }
 
 function renderCost() {
-  const cost = costFor(els.sizeSelect.value);
+  const cost = costFor(state.size);
   els.currentCost.textContent = cost;
   els.costInline.textContent = cost;
 }
@@ -203,7 +258,11 @@ async function createWebLoginSession() {
   els.qrImage.removeAttribute('src');
   els.qrStatus.textContent = '正在生成小程序码...';
   try {
-    const data = await api('/api/auth/web-login/session', { method: 'POST', auth: false });
+    const data = await api('/api/auth/web-login/session', {
+      method: 'POST',
+      auth: false,
+      body: { invite_code: getIncomingInviteCode() },
+    });
     state.webLoginToken = data.token;
     els.qrImage.src = data.qr_image;
     els.qrStatus.textContent = '请用微信扫码打开小程序确认登录';
@@ -307,7 +366,7 @@ async function submitCreate(event) {
     toast('请先上传参考图');
     return;
   }
-  if ((state.user?.points ?? 0) < costFor(els.sizeSelect.value)) {
+  if ((state.user?.points ?? 0) < costFor(state.size)) {
     toast('积分不足，请先签到或兑换');
     switchView('profile');
     return;
@@ -320,7 +379,7 @@ async function submitCreate(event) {
     const payload = {
       prompt,
       model: 'gpt-image-2',
-      size: els.sizeSelect.value,
+      size: state.size,
     };
     const result = state.mode === 'img2img'
       ? await submitImageEdit(payload)
@@ -465,7 +524,8 @@ function remixFromDetail(item) {
   switchView('create');
   setMode('img2img');
   els.promptInput.value = item.prompt ? `${item.prompt}\n\n请在保留主体氛围的基础上，进一步优化细节与构图。` : '';
-  els.sizeSelect.value = item.size || '1024x1024';
+  state.size = item.size || '1024x1024';
+  renderSizeOptions();
   renderPromptCount();
   renderCost();
   toast('已带入描述，请上传原图或参考图');
@@ -543,6 +603,78 @@ async function togglePointLogs() {
   await loadPointLogs();
 }
 
+function renderCommunityConfig() {
+  const community = state.community;
+  els.communityMenuText.textContent = community.title;
+  els.communityMenuSub.textContent = community.desc;
+  els.communityBadgeText.textContent = community.buttonText;
+  els.communityTitle.textContent = community.title;
+  els.communityDesc.textContent = community.desc;
+  els.communityPreviewBtn.textContent = community.buttonText;
+  if (community.imageUrl) {
+    els.communityLoading.textContent = '名片码加载中...';
+    els.communityLoading.classList.remove('hidden');
+    els.communityImage.src = community.imageUrl;
+    if (els.communityImage.complete && els.communityImage.naturalWidth > 0) {
+      els.communityLoading.classList.add('hidden');
+    }
+  }
+}
+
+async function shareInvite() {
+  if (!isLoggedIn()) {
+    toast('请先扫码登录');
+    return;
+  }
+  const inviteUrl = buildInviteUrl();
+  const shareData = {
+    title: '梦倩绘境积分福利入口',
+    text: '来梦倩绘境一起整理画面灵感，首次进入后可同步积分福利。',
+    url: inviteUrl,
+  };
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+      return;
+    }
+    await copyText(inviteUrl);
+    toast('邀请链接已复制');
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    toast(err.message || '分享失败');
+  }
+}
+
+function buildInviteUrl() {
+  const inviteCode = state.user?.invite_code || state.user?.id || '';
+  const url = new URL('/h5', window.location.origin);
+  if (inviteCode) url.searchParams.set('inviter', inviteCode);
+  return url.toString();
+}
+
+function getIncomingInviteCode() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('inviter') || params.get('invite_code') || '';
+}
+
+function openCommunity() {
+  renderCommunityConfig();
+  els.communityModal.classList.remove('hidden');
+}
+
+function closeCommunity() {
+  els.communityModal.classList.add('hidden');
+}
+
+function previewCommunityCard() {
+  const imageUrl = state.community.imageUrl;
+  if (!imageUrl) {
+    toast('暂无名片码');
+    return;
+  }
+  window.open(imageUrl, '_blank', 'noopener,noreferrer');
+}
+
 function logout() {
   stopPolling();
   logoutLocal();
@@ -594,6 +726,35 @@ function resolveImageUrl(path) {
   if (/^https?:\/\//i.test(first)) return first;
   if (first.startsWith('/')) return first;
   return `/uploads/${first}`;
+}
+
+function resolveAssetUrl(path, version = '') {
+  if (!path) return '';
+  let url = path;
+  if (!/^https?:\/\//i.test(url) && !url.startsWith('/')) {
+    url = `/${url}`;
+  }
+  if (version && !url.includes('/static/')) {
+    const separator = url.includes('?') ? '&' : '?';
+    url = `${url}${separator}v=${encodeURIComponent(version)}`;
+  }
+  return url;
+}
+
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const input = document.createElement('textarea');
+  input.value = text;
+  input.setAttribute('readonly', '');
+  input.style.position = 'fixed';
+  input.style.left = '-999px';
+  document.body.appendChild(input);
+  input.select();
+  document.execCommand('copy');
+  document.body.removeChild(input);
 }
 
 function statusText(status) {
