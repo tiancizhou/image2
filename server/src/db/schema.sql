@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS checkins (
 CREATE TABLE IF NOT EXISTS reward_ad_claims (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  points_earned INTEGER NOT NULL DEFAULT 2,
+  points_earned INTEGER NOT NULL DEFAULT 1,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -147,6 +147,7 @@ INSERT INTO settings (key, value) VALUES
   ('points_cost_2k', '2'),
   ('points_cost_4k', '4'),
   ('invite_reward_points', '3'),
+  ('reward_ad_points', '1'),
   ('checkin_points', '1'),
   ('checkin_consecutive_bonus', '{"7": 5, "30": 20}'),
   ('review_mode', 'false'),
@@ -154,6 +155,10 @@ INSERT INTO settings (key, value) VALUES
   ('community_desc', '添加作者微信，进群领取积分福利，交流提示词和画面审美参考。'),
   ('community_button_text', '查看名片码'),
   ('community_image_url', '/static/author-wechat-card.jpg')
+ON CONFLICT (key) DO NOTHING;
+
+INSERT INTO settings (key, value) VALUES
+  ('reward_ad_points', '1')
 ON CONFLICT (key) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS lottery_campaigns (

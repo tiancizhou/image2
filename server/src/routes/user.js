@@ -9,11 +9,17 @@ const settingsService = require('../services/settings');
 
 const router = express.Router();
 
+function intSetting(settings, key, fallback) {
+  const value = Number.parseInt(settings[key], 10);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 router.get('/public-config', async (req, res, next) => {
   try {
     const all = await settingsService.getAll();
     res.json({
       reviewMode: all.review_mode === 'true',
+      rewardAdPoints: intSetting(all, 'reward_ad_points', 1),
       community: {
         title: all.community_title || '加入梦倩绘境交流群',
         desc: all.community_desc || '添加作者微信，进群领取积分福利，交流提示词和画面审美参考。',
@@ -90,7 +96,8 @@ router.post('/checkin', auth, async (req, res, next) => {
 
 router.post('/reward-ad', auth, async (req, res, next) => {
   try {
-    const result = await pointsService.rewardAd(req.userId, 2);
+    const all = await settingsService.getAll();
+    const result = await pointsService.rewardAd(req.userId, intSetting(all, 'reward_ad_points', 1));
     res.json(result);
   } catch (err) {
     next(err);

@@ -25,13 +25,20 @@ async function checkin(userId) {
     [userId, today]
   );
   if (existing.length > 0) {
-    throw new Error('今日已签到');
+    const err = new Error('今日已签到');
+    err.status = 400;
+    throw err;
   }
 
   const { rows: userRows } = await db.query(
     'SELECT last_checkin_date, consecutive_checkins FROM users WHERE id = $1',
     [userId]
   );
+  if (userRows.length === 0) {
+    const err = new Error('用户不存在');
+    err.status = 404;
+    throw err;
+  }
   const user = userRows[0];
 
   const yesterday = shanghaiDate(-1);
@@ -51,10 +58,19 @@ async function checkin(userId) {
 
   const totalPoints = basePoints + bonusPoints;
 
-  await db.query(
-    `INSERT INTO checkins (user_id, checkin_date, points_earned) VALUES ($1, $2, $3)`,
-    [userId, today, totalPoints]
-  );
+  try {
+    await db.query(
+      `INSERT INTO checkins (user_id, checkin_date, points_earned) VALUES ($1, $2, $3)`,
+      [userId, today, totalPoints]
+    );
+  } catch (err) {
+    if (err.code === '23505') {
+      const duplicate = new Error('今日已签到');
+      duplicate.status = 400;
+      throw duplicate;
+    }
+    throw err;
+  }
 
   await db.query(
     'UPDATE users SET consecutive_checkins = $1, last_checkin_date = $2 WHERE id = $3',
@@ -79,6 +95,11 @@ async function getStatus(userId) {
     'SELECT consecutive_checkins, last_checkin_date FROM users WHERE id = $1',
     [userId]
   );
+  if (userRows.length === 0) {
+    const err = new Error('用户不存在');
+    err.status = 404;
+    throw err;
+  }
 
   return {
     checkedIn: rows.length > 0,

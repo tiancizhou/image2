@@ -8,14 +8,6 @@
       <text>当前积分</text>
       <text>{{userPoints}}</text>
     </view>
-    <view class="hero-reward-entry" bindtap="promptRewardAdForPoints">
-      <view class="hero-reward-icon">+2</view>
-      <view>
-        <text class="hero-reward-title">免费补给积分</text>
-        <text class="hero-reward-desc">看一次激励视频，立即到账 2 积分</text>
-      </view>
-      <text class="hero-reward-action">{{rewardAdLoading ? '加载中' : '马上领'}}</text>
-    </view>
   </view>
 
   <view wx:if="{{!serviceChecked}}" class="status-card service-checking">
@@ -40,10 +32,10 @@
         </view>
       </view>
       <view class="closed-action ad" bindtap="onClosedRewardAdTap">
-        <text class="closed-action-icon">+2</text>
+        <text class="closed-action-icon">+{{rewardAdPoints}}</text>
         <view>
           <text class="closed-action-title">看广告领积分</text>
-          <text class="closed-action-desc">完整观看一次激励视频，到账 2 积分</text>
+          <text class="closed-action-desc">完整观看一次激励视频，到账 {{rewardAdPoints}} 积分</text>
         </view>
       </view>
       <view class="closed-action community" bindtap="onClosedCommunityTap">
@@ -128,7 +120,7 @@
       <view class="reward-ad-icon">AD</view>
       <view class="reward-ad-copy">
         <text class="reward-ad-title">{{userPoints < pointsCost ? '积分不足，立即补给' : '免费领取更多积分'}}</text>
-        <text class="reward-ad-desc">看一次激励视频，到账 2 积分</text>
+        <text class="reward-ad-desc">看一次激励视频，到账 {{rewardAdPoints}} 积分</text>
       </view>
       <view class="reward-ad-action">{{rewardAdLoading ? '加载中' : '去领取'}}</view>
     </view>
@@ -199,6 +191,33 @@
       <text class="preview-panel-title">{{previewItem.title}}</text>
       <text class="preview-panel-desc">{{previewItem.desc}}</text>
       <button class="preview-close" bindtap="closeGalleryPreview">关闭</button>
+    </view>
+  </view>
+
+  <view class="community-card-mask" wx:if="{{showCommunityCard}}" catchtap="closeCommunityCard">
+    <view class="community-card-panel" catchtap="noop">
+      <view class="community-card-head">
+        <view>
+          <text class="community-card-kicker">COMMUNITY</text>
+          <text class="community-card-title">{{communityTitle}}</text>
+        </view>
+        <view class="community-card-close" bindtap="closeCommunityCard">×</view>
+      </view>
+      <text class="community-card-desc">{{communityDesc}}</text>
+      <view class="community-image-wrap">
+        <view class="community-image-loading" wx:if="{{!communityImageLoaded}}">
+          <view class="loading-dots"><view></view><view></view><view></view></view>
+          <text>名片码加载中...</text>
+        </view>
+        <image
+          class="community-card-image"
+          src="{{communityImageUrl}}"
+          mode="aspectFit"
+          bindload="onCommunityImageLoad"
+          bindtap="previewCommunityImage"
+        />
+      </view>
+      <text class="community-card-tip">点击名片码可放大查看，长按识别或保存。</text>
     </view>
   </view>
 </view>

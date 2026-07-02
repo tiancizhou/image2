@@ -85,22 +85,10 @@ async function getLogs(userId, page = 1, pageSize = 20) {
   return { list: rows, total: parseInt(count), page, pageSize };
 }
 
-async function rewardAd(userId, amount = 2) {
+async function rewardAd(userId, amount = 1) {
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-
-    const { rows: recentClaims } = await client.query(
-      `SELECT id FROM reward_ad_claims
-       WHERE user_id = $1 AND created_at > NOW() - INTERVAL '60 seconds'
-       LIMIT 1`,
-      [userId]
-    );
-    if (recentClaims.length > 0) {
-      const err = new Error('广告奖励领取太频繁，请稍后再试');
-      err.status = 429;
-      throw err;
-    }
 
     const { rows } = await client.query(
       'SELECT points FROM users WHERE id = $1 FOR UPDATE',

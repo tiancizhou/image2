@@ -236,6 +236,7 @@ async function renderSettings(el, seq) {
   const cost2k = settingNumber(settings, 'points_cost_2k', 2);
   const cost4k = settingNumber(settings, 'points_cost_4k', 4);
   const inviteReward = settingNumber(settings, 'invite_reward_points', 3);
+  const rewardAdPoints = settingNumber(settings, 'reward_ad_points', 1);
 
   el.innerHTML = `
     ${pageHeader('渠道与系统', '配置多中转站、自动熔断参数和小程序积分策略。', '<button class="btn btn-primary" id="new-channel">新增渠道</button>')}
@@ -277,6 +278,7 @@ async function renderSettings(el, seq) {
         <label>2K 消耗积分<input id="s-points_cost_2k" type="number" min="0" value="${cost2k}"></label>
         <label>4K 消耗积分<input id="s-points_cost_4k" type="number" min="0" value="${cost4k}"></label>
         <label>邀请注册奖励积分<input id="s-invite_reward_points" type="number" min="0" value="${inviteReward}"></label>
+        <label>看广告奖励积分<input id="s-reward_ad_points" type="number" min="1" value="${rewardAdPoints}"></label>
         <label>每日签到积分<input id="s-checkin_points" type="number" min="0" value="${escapeHtml(settings.checkin_points || 1)}"></label>
         <label>连续签到奖励 JSON<input id="s-checkin_consecutive_bonus" value="${escapeHtml(settings.checkin_consecutive_bonus || '{}')}"></label>
       </div>
@@ -419,6 +421,7 @@ function bindSettingsEvents() {
           points_cost_2k: document.getElementById('s-points_cost_2k').value,
           points_cost_4k: document.getElementById('s-points_cost_4k').value,
           invite_reward_points: document.getElementById('s-invite_reward_points').value,
+          reward_ad_points: document.getElementById('s-reward_ad_points').value,
           checkin_points: document.getElementById('s-checkin_points').value,
           checkin_consecutive_bonus: bonus,
           review_mode: document.getElementById('s-review_mode').checked ? 'true' : 'false',

@@ -223,6 +223,7 @@ router.put('/settings', adminAuth, async (req, res, next) => {
       'points_cost_2k',
       'points_cost_4k',
       'invite_reward_points',
+      'reward_ad_points',
       'checkin_points',
       'checkin_consecutive_bonus',
       'review_mode',

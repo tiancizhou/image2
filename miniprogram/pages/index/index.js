@@ -38,9 +38,11 @@ Page({
     quickCheckinLoading: false,
     checkinPromptChecking: false,
     checkinPromptChecked: false,
+    checkedInToday: false,
     checkinConsecutive: 0,
     quickCheckinRewardText: '每日签到可领取积分',
     rewardAdLoading: false,
+    rewardAdPoints: 1,
     showTaskModal: false,
     taskAccepted: false,
     taskSubmittingText: '正在提交创作任务...',
@@ -62,6 +64,8 @@ Page({
     communityDesc: '添加作者微信，进群领取积分福利，交流提示词和画面审美参考。',
     communityButtonText: '查看名片码',
     communityImageUrl: '/static/author-wechat-card.jpg',
+    showCommunityCard: false,
+    communityImageLoaded: false,
     previewVisible: false,
     previewItem: null,
     galleryItems: [
@@ -126,12 +130,25 @@ Page({
       const community = data.community || {};
       this.setData({
         reviewMode: data.reviewMode === true,
+        rewardAdPoints: Number(data.rewardAdPoints) > 0 ? Number(data.rewardAdPoints) : this.data.rewardAdPoints,
         communityTitle: community.title || this.data.communityTitle,
         communityDesc: community.desc || this.data.communityDesc,
         communityButtonText: community.buttonText || this.data.communityButtonText,
         communityImageUrl: this.resolveAssetUrl(community.imageUrl || this.data.communityImageUrl),
+        communityImageLoaded: false,
       });
+      this.preloadCommunityImage();
     } catch {}
+  },
+
+  preloadCommunityImage() {
+    const imageUrl = this.data.communityImageUrl;
+    if (!imageUrl || !wx.getImageInfo) return;
+    wx.getImageInfo({
+      src: imageUrl,
+      success: () => this.setData({ communityImageLoaded: true }),
+      fail: () => this.setData({ communityImageLoaded: false }),
+    });
   },
 
   async loadServiceAvailability() {
@@ -197,6 +214,7 @@ Page({
       this.setData({
         checkinPromptChecked: true,
         checkinPromptChecking: false,
+        checkedInToday: !!status.checkedIn,
         checkinConsecutive: status.consecutive || 0,
         showQuickCheckin: !status.checkedIn,
         quickCheckinRewardText: status.consecutive > 0
@@ -225,6 +243,7 @@ Page({
       this.setData({
         showQuickCheckin: false,
         quickCheckinLoading: false,
+        checkedInToday: true,
         checkinConsecutive: res.consecutive || this.data.checkinConsecutive,
       });
       wx.setStorageSync(`quick_checkin_dismissed_${this.todayKey()}`, '1');
@@ -292,7 +311,7 @@ Page({
     try {
       await this.showRewardedVideoAd();
       const result = await request('/api/user/reward-ad', { method: 'POST' });
-      const points = result.points || 2;
+      const points = result.points || this.data.rewardAdPoints;
       wx.showToast({ title: `已获得 ${points} 积分`, icon: 'none' });
       this.setData({ userPoints: result.balanceAfter, rewardAdLoading: false });
       this.loadUserPoints();
@@ -308,8 +327,8 @@ Page({
     wx.showModal({
       title: insufficient ? '积分不足' : '领取更多积分',
       content: insufficient
-        ? `当前积分不足，本次需要 ${this.data.pointsCost} 积分。完整观看一次广告可获得 2 积分。`
-        : '完整观看一次广告可获得 2 积分，可用于后续使用。',
+        ? `当前积分不足，本次需要 ${this.data.pointsCost} 积分。完整观看一次广告可获得 ${this.data.rewardAdPoints} 积分。`
+        : `完整观看一次广告可获得 ${this.data.rewardAdPoints} 积分，可用于后续使用。`,
       cancelText: '稍后再说',
       confirmText: '看广告',
       success: async (res) => {
@@ -497,6 +516,10 @@ Page({
   },
 
   onClosedCheckinTap() {
+    if (this.data.checkedInToday) {
+      wx.showToast({ title: '今日已签到', icon: 'none' });
+      return;
+    }
     this.onQuickCheckin();
   },
 
@@ -510,6 +533,20 @@ Page({
       wx.showToast({ title: '暂未配置名片码', icon: 'none' });
       return;
     }
+    this.setData({ showCommunityCard: true });
+  },
+
+  closeCommunityCard() {
+    this.setData({ showCommunityCard: false });
+  },
+
+  onCommunityImageLoad() {
+    this.setData({ communityImageLoaded: true });
+  },
+
+  previewCommunityImage() {
+    const imageUrl = this.data.communityImageUrl;
+    if (!imageUrl) return;
     wx.previewImage({
       current: imageUrl,
       urls: [imageUrl],

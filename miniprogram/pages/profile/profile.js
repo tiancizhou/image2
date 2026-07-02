@@ -20,13 +20,14 @@ Page({
     showCommunity: false,
     showPointLogsPanel: false,
     authorWechatCard: AUTHOR_WECHAT_CARD,
+    authorWechatCardLoaded: false,
     reviewMode: false,
     serviceAvailable: false,
-    communityMenuText: '联系作者',
-    communityMenuSub: '添加作者微信，交流画面灵感',
-    communityBadgeText: '名片码',
-    communityTitle: '联系梦倩绘境作者',
-    communityDesc: '长按或保存下方微信名片码，添加作者微信后备注「梦倩绘境」，一起交流画面灵感与审美参考。',
+    communityMenuText: '加入梦倩绘境交流群',
+    communityMenuSub: '添加作者微信，进群领取积分福利，交流提示词和画面审美参考。',
+    communityBadgeText: '查看名片码',
+    communityTitle: '加入梦倩绘境交流群',
+    communityDesc: '添加作者微信，进群领取积分福利，交流提示词和画面审美参考。',
     inviteCode: '',
     inviteRewardText: '好友通过你的链接首次注册成功后，你会获得邀请积分。',
   },
@@ -58,8 +59,20 @@ Page({
         communityMenuSub: community.desc || this.data.communityMenuSub,
         communityBadgeText: community.buttonText || this.data.communityBadgeText,
         authorWechatCard: this.resolveAssetUrl(community.imageUrl || this.data.authorWechatCard),
+        authorWechatCardLoaded: false,
       });
+      this.preloadWechatCard();
     } catch {}
+  },
+
+  preloadWechatCard() {
+    const imageUrl = this.data.authorWechatCard;
+    if (!imageUrl || !wx.getImageInfo) return;
+    wx.getImageInfo({
+      src: imageUrl,
+      success: () => this.setData({ authorWechatCardLoaded: true }),
+      fail: () => this.setData({ authorWechatCardLoaded: false }),
+    });
   },
 
   async loadServiceAvailability() {
@@ -167,7 +180,15 @@ Page({
     this.setData({ showCommunity: false });
   },
 
+  onWechatCardLoad() {
+    this.setData({ authorWechatCardLoaded: true });
+  },
+
   previewWechatCard() {
+    if (!this.data.authorWechatCardLoaded) {
+      wx.showToast({ title: '名片码加载中', icon: 'none' });
+      return;
+    }
     wx.previewImage({
       current: this.data.authorWechatCard,
       urls: [this.data.authorWechatCard],

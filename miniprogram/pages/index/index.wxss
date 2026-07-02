@@ -76,71 +76,6 @@
   font-weight: 700;
 }
 
-.hero-reward-entry {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20rpx;
-  margin-top: 22rpx;
-  padding: 24rpx 24rpx;
-  border: 3rpx solid rgba(255, 240, 158, 0.64);
-  border-radius: 30rpx;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(255, 246, 180, 0.54), transparent 44%),
-    linear-gradient(135deg, rgba(255, 248, 232, 0.28), rgba(243, 255, 156, 0.2));
-  backdrop-filter: blur(10rpx);
-  box-shadow: 0 18rpx 42rpx rgba(0, 0, 0, 0.16);
-}
-
-.hero-reward-icon {
-  flex: 0 0 auto;
-  width: 86rpx;
-  height: 86rpx;
-  border-radius: 30rpx;
-  color: #233026;
-  background: linear-gradient(135deg, #f3ff9c, #ffd166);
-  box-shadow: 0 14rpx 32rpx rgba(255, 209, 102, 0.36);
-  font-size: 32rpx;
-  font-weight: 900;
-  line-height: 86rpx;
-  text-align: center;
-}
-
-.hero-reward-title,
-.hero-reward-desc {
-  display: block;
-}
-
-.hero-reward-entry > view:nth-child(2) {
-  flex: 1;
-  min-width: 0;
-}
-
-.hero-reward-title {
-  color: #fff8e8;
-  font-size: 34rpx;
-  font-weight: 900;
-}
-
-.hero-reward-desc {
-  margin-top: 8rpx;
-  color: rgba(255, 248, 232, 0.84);
-  font-size: 24rpx;
-  font-weight: 700;
-}
-
-.hero-reward-action {
-  flex: 0 0 auto;
-  padding: 16rpx 24rpx;
-  border-radius: 999rpx;
-  color: #233026;
-  background: #f3ff9c;
-  font-size: 26rpx;
-  font-weight: 900;
-  box-shadow: 0 12rpx 26rpx rgba(243, 255, 156, 0.28);
-}
-
 .mode-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -865,4 +800,129 @@ button.closed-action::after {
 
 .preview-close::after {
   border: 0;
+}
+
+.community-card-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 34rpx;
+  background: rgba(28, 42, 34, 0.64);
+  backdrop-filter: blur(10rpx);
+}
+
+.community-card-panel {
+  width: 100%;
+  max-height: 88vh;
+  box-sizing: border-box;
+  padding: 34rpx;
+  overflow: hidden;
+  border-radius: 42rpx;
+  color: #26311f;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(238, 248, 255, 0.96), transparent 42%),
+    linear-gradient(160deg, #fffff7 0%, #f3ffdf 58%, #fff3df 100%);
+  box-shadow: 0 34rpx 90rpx rgba(22, 35, 25, 0.34);
+}
+
+.community-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.community-card-kicker,
+.community-card-title,
+.community-card-desc,
+.community-card-tip {
+  display: block;
+}
+
+.community-card-kicker {
+  color: #6a8e3d;
+  font-size: 20rpx;
+  font-weight: 900;
+  letter-spacing: 4rpx;
+}
+
+.community-card-title {
+  margin-top: 8rpx;
+  color: #252015;
+  font-size: 38rpx;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.community-card-close {
+  flex: 0 0 auto;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  color: #33402b;
+  background: rgba(35, 48, 38, 0.08);
+  font-size: 42rpx;
+  font-weight: 500;
+  line-height: 58rpx;
+  text-align: center;
+}
+
+.community-card-desc {
+  margin-top: 18rpx;
+  color: #796e5d;
+  font-size: 26rpx;
+  line-height: 1.6;
+}
+
+.community-image-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 610rpx;
+  margin-top: 26rpx;
+  overflow: hidden;
+  border-radius: 34rpx;
+  background:
+    linear-gradient(45deg, rgba(35, 48, 38, 0.04) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(35, 48, 38, 0.04) 25%, transparent 25%),
+    #fffdf8;
+  background-size: 28rpx 28rpx;
+  box-shadow: inset 0 0 0 2rpx rgba(35, 48, 38, 0.08);
+}
+
+.community-card-image {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+}
+
+.community-image-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #6a8e3d;
+  font-size: 25rpx;
+  font-weight: 800;
+  background: rgba(255, 253, 248, 0.86);
+}
+
+.community-image-loading .loading-dots {
+  margin-bottom: 18rpx;
+}
+
+.community-card-tip {
+  margin-top: 18rpx;
+  color: #7a6a50;
+  font-size: 24rpx;
+  line-height: 1.5;
+  text-align: center;
 }

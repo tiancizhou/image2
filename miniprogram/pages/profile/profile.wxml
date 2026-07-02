@@ -82,11 +82,19 @@
       <text class="community-title">{{communityTitle}}</text>
       <text class="community-desc">{{communityDesc}}</text>
       <view class="wechat-card-box">
-        <image class="wechat-card-image" src="{{authorWechatCard}}" mode="aspectFit" show-menu-by-longpress />
+        <view class="wechat-card-loading" wx:if="{{!authorWechatCardLoaded}}">名片码加载中...</view>
+        <image
+          class="wechat-card-image"
+          src="{{authorWechatCard}}"
+          mode="aspectFit"
+          show-menu-by-longpress
+          bindload="onWechatCardLoad"
+          bindtap="previewWechatCard"
+        />
       </view>
       <view class="community-actions">
         <button class="community-btn secondary" bindtap="closeCommunity">关闭</button>
-        <button class="community-btn primary" bindtap="previewWechatCard">查看名片码</button>
+        <button class="community-btn primary" bindtap="previewWechatCard">{{authorWechatCardLoaded ? communityBadgeText : '加载中...'}}</button>
       </view>
     </view>
   </view>

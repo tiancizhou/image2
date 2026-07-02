@@ -259,7 +259,9 @@ button.menu-item::after {
 }
 
 .wechat-card-box {
+  position: relative;
   width: 100%;
+  min-height: 596rpx;
   margin-top: 30rpx;
   padding: 18rpx;
   border-radius: 30rpx;
@@ -269,7 +271,23 @@ button.menu-item::after {
   align-items: center;
 }
 
+.wechat-card-loading {
+  position: absolute;
+  inset: 18rpx;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24rpx;
+  color: #6a8e3d;
+  background: rgba(255, 250, 240, 0.88);
+  font-size: 25rpx;
+  font-weight: 800;
+}
+
 .wechat-card-image {
+  position: relative;
+  z-index: 2;
   width: 430rpx;
   height: 560rpx;
   border-radius: 24rpx;
