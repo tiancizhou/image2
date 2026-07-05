@@ -1,9 +1,10 @@
 const API = '/admin/api';
 let token = localStorage.getItem('admin_token') || '';
-let currentView = 'settings';
+let currentView = 'dashboard';
 let cachedChannels = [];
 let renderSeq = 0;
 const viewState = {
+  dashboard: { days: 14 },
   users: { page: 1, pageSize: 20 },
   generations: { page: 1, pageSize: 20 },
   cdk: { page: 1, pageSize: 20 },
@@ -132,6 +133,7 @@ function render() {
           </div>
         </div>
         <nav>
+          <a href="#" data-view="dashboard" class="${currentView === 'dashboard' ? 'active' : ''}">数据看板</a>
           <a href="#" data-view="settings" class="${currentView === 'settings' ? 'active' : ''}">渠道与系统</a>
           <a href="#" data-view="generations" class="${currentView === 'generations' ? 'active' : ''}">生成记录</a>
           <a href="#" data-view="users" class="${currentView === 'users' ? 'active' : ''}">用户管理</a>
@@ -200,6 +202,7 @@ async function renderContent() {
   const seq = ++renderSeq;
   el.innerHTML = `<div class="loading">正在同步控制台数据...</div>`;
   try {
+    if (currentView === 'dashboard') await renderDashboard(el, seq);
     if (currentView === 'settings') await renderSettings(el, seq);
     if (currentView === 'users') await renderUsers(el, seq);
     if (currentView === 'generations') await renderGenerations(el, seq);
@@ -220,6 +223,138 @@ function pageHeader(title, desc, action = '') {
       </div>
       ${action}
     </div>`;
+}
+
+function num(value) {
+  const n = Number(value || 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function signedDelta(today, yesterday) {
+  const delta = num(today) - num(yesterday);
+  if (delta === 0) return '<span class="delta flat">较昨日持平</span>';
+  return `<span class="delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta} 较昨日</span>`;
+}
+
+function shortDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(5, 10);
+  return `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function successRate(success, total) {
+  const count = num(total);
+  if (count <= 0) return '0%';
+  return `${Math.round((num(success) / count) * 100)}%`;
+}
+
+function miniBars(rows, key) {
+  const values = rows.map(row => num(row[key]));
+  const max = Math.max(1, ...values);
+  return `
+    <div class="mini-bars">
+      ${rows.map((row) => {
+        const value = num(row[key]);
+        const height = Math.max(8, Math.round((value / max) * 86));
+        return `<div class="mini-bar" title="${shortDate(row.day)}：${value}"><span style="height:${height}%"></span><small>${shortDate(row.day).slice(3)}</small></div>`;
+      }).join('')}
+    </div>`;
+}
+
+async function renderDashboard(el, seq) {
+  const state = viewState.dashboard;
+  const data = await request(`/dashboard?days=${state.days}`);
+  if (seq !== renderSeq) return;
+  const today = data.today || {};
+  const yesterday = data.yesterday || {};
+  const last7 = data.last7 || {};
+  const daily = data.daily || [];
+  const totals = data.totals || {};
+
+  el.innerHTML = `
+    ${pageHeader('数据看板', '观察每日签到、新增用户、生图数量、失败率与渠道健康状态。', `
+      <div class="toolbar">
+        <select id="dashboard-days">
+          <option value="7" ${state.days === 7 ? 'selected' : ''}>最近 7 天</option>
+          <option value="14" ${state.days === 14 ? 'selected' : ''}>最近 14 天</option>
+          <option value="30" ${state.days === 30 ? 'selected' : ''}>最近 30 天</option>
+          <option value="60" ${state.days === 60 ? 'selected' : ''}>最近 60 天</option>
+        </select>
+        <button class="btn btn-secondary" id="refresh-dashboard">刷新</button>
+      </div>
+    `)}
+    <div class="metric-grid dashboard-metrics">
+      <div class="metric-card"><span>今日签到人数</span><strong>${num(today.checkin_users)}</strong>${signedDelta(today.checkin_users, yesterday.checkin_users)}<small>近 7 天 ${num(last7.checkin_users)} 人次</small></div>
+      <div class="metric-card"><span>今日新增用户</span><strong>${num(today.new_users)}</strong>${signedDelta(today.new_users, yesterday.new_users)}<small>累计用户 ${num(totals.total_users)}</small></div>
+      <div class="metric-card"><span>今日生图数量</span><strong>${num(today.generations)}</strong>${signedDelta(today.generations, yesterday.generations)}<small>成功率 ${successRate(today.success_generations, today.generations)}</small></div>
+      <div class="metric-card danger"><span>今日失败任务</span><strong>${num(today.failed_generations)}</strong>${signedDelta(today.failed_generations, yesterday.failed_generations)}<small>待处理 ${num(totals.total_pending_generations)} 条</small></div>
+    </div>
+    <div class="dashboard-grid">
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <h3>每日趋势</h3>
+            <p>按自然日聚合，包含签到、新用户、生图、失败和广告领取。</p>
+          </div>
+        </div>
+        <div class="chart-strip">
+          <div><span>签到人数</span>${miniBars(daily, 'checkin_users')}</div>
+          <div><span>生图数量</span>${miniBars(daily, 'generations')}</div>
+          <div><span>新增用户</span>${miniBars(daily, 'new_users')}</div>
+        </div>
+      </section>
+      <section class="card dashboard-side">
+        <div class="card-header">
+          <div>
+            <h3>运营快照</h3>
+            <p>近 7 天与累计数据。</p>
+          </div>
+        </div>
+        <div class="snapshot-list">
+          <div><span>近 7 天生图</span><strong>${num(last7.generations)}</strong></div>
+          <div><span>近 7 天成功</span><strong>${num(last7.success_generations)}</strong></div>
+          <div><span>近 7 天失败</span><strong>${num(last7.failed_generations)}</strong></div>
+          <div><span>近 7 天广告领取</span><strong>${num(last7.reward_ad_claims)}</strong></div>
+          <div><span>累计生图</span><strong>${num(totals.total_generations)}</strong></div>
+          <div><span>用户积分余额</span><strong>${num(totals.total_user_points)}</strong></div>
+          <div><span>可用渠道</span><strong>${num(totals.enabled_channels)}</strong></div>
+          <div><span>熔断渠道</span><strong>${num(totals.open_channels)}</strong></div>
+        </div>
+      </section>
+    </div>
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h3>每日明细</h3>
+          <p>用于快速排查某天增长、消耗和失败波动。</p>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>日期</th><th>签到人数</th><th>新增用户</th><th>生图数量</th><th>成功</th><th>失败</th><th>待处理</th><th>文生图</th><th>图生图</th><th>消耗积分</th><th>广告领取</th><th>成功率</th></tr></thead>
+        <tbody>${daily.slice().reverse().map((row) => `
+          <tr>
+            <td>${shortDate(row.day)}</td>
+            <td>${num(row.checkin_users)}</td>
+            <td>${num(row.new_users)}</td>
+            <td>${num(row.generations)}</td>
+            <td>${num(row.success_generations)}</td>
+            <td>${num(row.failed_generations)}</td>
+            <td>${num(row.pending_generations)}</td>
+            <td>${num(row.text2img_generations)}</td>
+            <td>${num(row.img2img_generations)}</td>
+            <td>${num(row.points_cost)}</td>
+            <td>${num(row.reward_ad_claims)}</td>
+            <td><span class="pill ${num(row.failed_generations) > 0 ? 'warm' : ''}">${successRate(row.success_generations, row.generations)}</span></td>
+          </tr>`).join('')}</tbody>
+      </table>
+    </section>`;
+
+  document.getElementById('dashboard-days').onchange = (e) => {
+    state.days = Number(e.target.value) || 14;
+    renderContent();
+  };
+  document.getElementById('refresh-dashboard').onclick = () => renderContent();
 }
 
 async function renderSettings(el, seq) {

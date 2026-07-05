@@ -32,6 +32,11 @@ function parseDateInput(value, fieldName) {
   return date;
 }
 
+function dashboardDays(value) {
+  const days = parseInt(value, 10) || 14;
+  return Math.min(Math.max(days, 7), 60);
+}
+
 function collectGenerationFiles(rows) {
   const files = new Set();
   for (const row of rows) {
@@ -68,6 +73,115 @@ router.post('/login', async (req, res, next) => {
       { expiresIn: '7d' }
     );
     res.json({ token, username: admin.username });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/dashboard', adminAuth, async (req, res, next) => {
+  try {
+    const days = dashboardDays(req.query.days);
+    const { rows: dailyRows } = await db.query(
+      `WITH day_series AS (
+         SELECT generate_series(
+           (CURRENT_DATE - (($1::int - 1) * INTERVAL '1 day'))::date,
+           CURRENT_DATE,
+           INTERVAL '1 day'
+         )::date AS day
+       ),
+       user_daily AS (
+         SELECT created_at::date AS day, COUNT(*)::int AS new_users
+         FROM users
+         WHERE created_at::date >= (CURRENT_DATE - (($1::int - 1) * INTERVAL '1 day'))::date
+         GROUP BY created_at::date
+       ),
+       checkin_daily AS (
+         SELECT checkin_date::date AS day, COUNT(DISTINCT user_id)::int AS checkin_users
+         FROM checkins
+         WHERE checkin_date >= (CURRENT_DATE - (($1::int - 1) * INTERVAL '1 day'))::date
+         GROUP BY checkin_date::date
+       ),
+       generation_daily AS (
+         SELECT
+           created_at::date AS day,
+           COUNT(*)::int AS generations,
+           COUNT(*) FILTER (WHERE status = 'success')::int AS success_generations,
+           COUNT(*) FILTER (WHERE status = 'failed')::int AS failed_generations,
+           COUNT(*) FILTER (WHERE status = 'pending')::int AS pending_generations,
+           COUNT(*) FILTER (WHERE type = 'text2img')::int AS text2img_generations,
+           COUNT(*) FILTER (WHERE type = 'img2img')::int AS img2img_generations,
+           COALESCE(SUM(points_cost), 0)::int AS points_cost
+         FROM generations
+         WHERE created_at::date >= (CURRENT_DATE - (($1::int - 1) * INTERVAL '1 day'))::date
+         GROUP BY created_at::date
+       ),
+       reward_daily AS (
+         SELECT created_at::date AS day, COUNT(*)::int AS reward_ad_claims
+         FROM reward_ad_claims
+         WHERE created_at::date >= (CURRENT_DATE - (($1::int - 1) * INTERVAL '1 day'))::date
+         GROUP BY created_at::date
+       )
+       SELECT
+         ds.day,
+         COALESCE(u.new_users, 0) AS new_users,
+         COALESCE(c.checkin_users, 0) AS checkin_users,
+         COALESCE(g.generations, 0) AS generations,
+         COALESCE(g.success_generations, 0) AS success_generations,
+         COALESCE(g.failed_generations, 0) AS failed_generations,
+         COALESCE(g.pending_generations, 0) AS pending_generations,
+         COALESCE(g.text2img_generations, 0) AS text2img_generations,
+         COALESCE(g.img2img_generations, 0) AS img2img_generations,
+         COALESCE(g.points_cost, 0) AS points_cost,
+         COALESCE(r.reward_ad_claims, 0) AS reward_ad_claims
+       FROM day_series ds
+       LEFT JOIN user_daily u ON u.day = ds.day
+       LEFT JOIN checkin_daily c ON c.day = ds.day
+       LEFT JOIN generation_daily g ON g.day = ds.day
+       LEFT JOIN reward_daily r ON r.day = ds.day
+       ORDER BY ds.day ASC`,
+      [days]
+    );
+
+    const { rows: [totalRow] } = await db.query(
+      `SELECT
+         (SELECT COUNT(*)::int FROM users) AS total_users,
+         (SELECT COUNT(*)::int FROM generations) AS total_generations,
+         (SELECT COUNT(*)::int FROM generations WHERE status = 'success') AS total_success_generations,
+         (SELECT COUNT(*)::int FROM generations WHERE status = 'failed') AS total_failed_generations,
+         (SELECT COUNT(*)::int FROM generations WHERE status = 'pending') AS total_pending_generations,
+         (SELECT COALESCE(SUM(points), 0)::int FROM users) AS total_user_points,
+         (SELECT COUNT(*)::int FROM api_channels WHERE enabled = TRUE) AS enabled_channels,
+         (SELECT COUNT(*)::int FROM api_channels WHERE circuit_status = 'open') AS open_channels`
+    );
+
+    const today = dailyRows[dailyRows.length - 1] || {};
+    const yesterday = dailyRows[dailyRows.length - 2] || {};
+    const last7 = dailyRows.slice(-7).reduce((sum, row) => ({
+      new_users: sum.new_users + Number(row.new_users || 0),
+      checkin_users: sum.checkin_users + Number(row.checkin_users || 0),
+      generations: sum.generations + Number(row.generations || 0),
+      success_generations: sum.success_generations + Number(row.success_generations || 0),
+      failed_generations: sum.failed_generations + Number(row.failed_generations || 0),
+      reward_ad_claims: sum.reward_ad_claims + Number(row.reward_ad_claims || 0),
+      points_cost: sum.points_cost + Number(row.points_cost || 0),
+    }), {
+      new_users: 0,
+      checkin_users: 0,
+      generations: 0,
+      success_generations: 0,
+      failed_generations: 0,
+      reward_ad_claims: 0,
+      points_cost: 0,
+    });
+
+    res.json({
+      days,
+      totals: totalRow,
+      today,
+      yesterday,
+      last7,
+      daily: dailyRows,
+    });
   } catch (err) {
     next(err);
   }
